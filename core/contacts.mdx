@@ -1,0 +1,238 @@
+---
+title: 'Contacts'
+description: 'Learn how to manage contacts in the Mailee.me platform using the .NET SDK'
+---
+
+Contacts are the foundation of your email marketing campaigns in Mailee.me. They represent individual subscribers or recipients in your audience, with support for standard fields, custom dynamic attributes, and list subscriptions.
+
+## When to Use Contacts
+
+Use the Contact class when you need to:
+
+- Add new subscribers to your Mailee.me account
+- Update existing contact information
+- Retrieve contact details by ID, email, or internal ID
+- Subscribe or unsubscribe contacts from specific lists
+- Store custom data using dynamic fields
+
+## Creating a Contact
+
+Create a new contact with standard and custom fields:
+
+```csharp
+// Create Contact
+Mailee.Contact contact = new Mailee.Contact();
+contact.Email = "email@site.com";
+contact.Name = "Nome";
+contact.InternalId = 33;
+contact.Company = "Empresa";
+contact.Position = "Cargo";
+contact.Sex = "M";
+contact.Birthday = new DateTime(1986,1,30);
+contact.Age = 25;
+contact.Phone = "(71) 9999-8888";
+contact.Mobile = "(71) 9999-8888";
+contact.Address = "Rua Teste, S/N";
+contact.Notes = "Anotações do Contato";
+
+// Add Optional Fields
+contact.DynamicValues.Add(new KeyValuePair<string,string>("Campo 1","Valor 1"));
+contact.DynamicValues.Add(new KeyValuePair<string,string>("Campo 2","Valor 2"));
+
+// Save
+contact.save();
+```
+
+## Updating a Contact
+
+Retrieve and update an existing contact:
+
+```csharp
+// Find Contact
+Mailee.Contact contact = Mailee.Contact.findById(1);
+
+// Update Fields
+contact.Email = "email@site.com";
+contact.Name = "Nome";
+contact.InternalId = 33;
+contact.Company = "Empresa";
+contact.Position = "Cargo";
+contact.Sex = "M";
+contact.Birthday = new DateTime(1986, 1, 30);
+contact.Age = 25;
+contact.Phone = "(71) 9999-8888";
+contact.Mobile = "(71) 9999-8888";
+contact.Address = "Rua Teste, S/N";
+contact.Notes = "Anotações do Contato";
+
+// Add Optional Fields
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Campo 1", "Valor 1"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Campo 2", "Valor 2"));
+
+// Save
+contact.save();
+```
+
+## Retrieving Contacts
+
+<AccordionGroup>
+  <Accordion title="Find All Contacts">
+    Retrieve all contacts from your account:
+
+    ```csharp
+    // Find All Contacts
+    List<Mailee.Contact> contacts = Mailee.Contact.findAll();
+    ```
+
+    <Note>Results are paginated. Use `findAll(int page)` to retrieve specific pages.</Note>
+  </Accordion>
+
+  <Accordion title="Find Contact by ID">
+    Retrieve a specific contact using the Mailee.me ID:
+
+    ```csharp
+    // Find Contact by Id
+    Mailee.Contact contact = Mailee.Contact.findById(1);
+    ```
+  </Accordion>
+
+  <Accordion title="Find Contact by Internal ID">
+    Retrieve a contact using your system's internal ID:
+
+    ```csharp
+    // Find Contact by Internal Id
+    Mailee.Contact contact = Mailee.Contact.findByInternalId(1);
+    ```
+
+    <Tip>Use the `InternalId` field to map Mailee.me contacts to your own database records.</Tip>
+  </Accordion>
+
+  <Accordion title="Find Contact by Email">
+    Retrieve a contact by their email address:
+
+    ```csharp
+    // Find Contact by Email
+    Mailee.Contact contact = Mailee.Contact.findByEmail("email@site.com");
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Managing List Subscriptions
+
+### Subscribe to a List
+
+Add a contact to a specific mailing list:
+
+```csharp
+// Find Contact by Id
+Mailee.Contact contact = Mailee.Contact.findById(1);
+
+// Subscribe contact to list (List Id = 99)
+contact.Subscribe(99);
+
+// Subscribe contact to list (List Name = "clients")
+contact.Subscribe("clients");
+```
+
+### Unsubscribe from a List
+
+Remove a contact from a specific mailing list:
+
+```csharp
+// Find Contact by Id
+Mailee.Contact contact = Mailee.Contact.findById(1);
+
+// Unsubscribe contact to list (List Id = 99)
+contact.Unsubscribe(99);
+
+// Unsubscribe contact to list (List Name = 'clients')
+contact.Unsubscribe("clients");
+```
+
+## Dynamic Fields
+
+Mailee.me supports custom dynamic attributes for storing additional contact data:
+
+```csharp
+Mailee.Contact contact = new Mailee.Contact();
+contact.Email = "user@example.com";
+contact.Name = "John Doe";
+
+// Add custom fields
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Department", "Sales"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("CustomerType", "Premium"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("AccountNumber", "12345"));
+
+contact.save();
+```
+
+<Info>Dynamic fields are useful for storing custom data that doesn't fit into standard contact properties.</Info>
+
+## Available Properties
+
+The Contact class includes the following standard properties:
+
+- **Id** - Mailee.me contact ID (read-only after creation)
+- **Email** - Contact email address (required)
+- **Name** - Contact full name
+- **InternalId** - Your system's internal ID for this contact
+- **Company** - Company name
+- **Position** - Job title or position
+- **Sex** - Gender ("M" or "F")
+- **Birthday** - Date of birth
+- **Age** - Contact age
+- **Phone** - Primary phone number
+- **Mobile** - Mobile phone number
+- **Address** - Physical address
+- **Notes** - Additional notes about the contact
+- **DynamicValues** - Collection of custom key-value pairs
+- **CreatedAt** - Timestamp when contact was created (read-only)
+- **UpdatedAt** - Timestamp when contact was last updated (read-only)
+
+## Best Practices
+
+<Steps>
+  <Step title="Always use InternalId">
+    Store your system's primary key in the `InternalId` field to easily sync contacts between your database and Mailee.me.
+  </Step>
+
+  <Step title="Validate email addresses">
+    Ensure email addresses are valid before creating or updating contacts to avoid API errors.
+  </Step>
+
+  <Step title="Handle exceptions">
+    Wrap contact operations in try-catch blocks to handle API errors gracefully.
+
+    ```csharp
+    try
+    {
+        Mailee.Contact contact = new Mailee.Contact();
+        contact.Email = "test@example.com";
+        contact.save();
+    }
+    catch (Mailee.RestExcepction ex)
+    {
+        foreach (string error in ex.ErrorMessages)
+        {
+            Console.WriteLine(error);
+        }
+    }
+    ```
+  </Step>
+
+  <Step title="Use dynamic fields sparingly">
+    While dynamic fields are powerful, too many custom fields can make data management complex. Use them for truly dynamic data.
+  </Step>
+</Steps>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Lists" icon="list" href="/core/lists">
+    Learn how to organize contacts into lists
+  </Card>
+  
+  <Card title="Messages" icon="envelope" href="/core/messages">
+    Send email campaigns to your contacts
+  </Card>
+</CardGroup>

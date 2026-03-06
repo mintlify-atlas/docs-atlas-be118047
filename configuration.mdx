@@ -1,0 +1,370 @@
+---
+title: Configuration
+description: Configure the Mailee.me .NET SDK with your API credentials and settings
+---
+
+The Mailee.me .NET SDK requires two configuration values to authenticate with the API: your Secret Key and Subdomain. These values are stored in your application's Web.Config file.
+
+## Basic Configuration
+
+Add the following settings to the `<appSettings>` section of your Web.Config:
+
+```xml
+<configuration>
+  <appSettings>
+    <!-- Mailee - Secret Key -->
+    <add key="MaileeKey" value="your-secret-key"/>
+    <!-- Mailee - Subdomain -->
+    <add key="MaileeSubdomain" value="your-subdomain"/>
+  </appSettings>
+</configuration>
+```
+
+## Configuration Values
+
+### MaileeKey (Required)
+
+Your unique API Secret Key provided by Mailee.me. This is a long alphanumeric string that authenticates your application.
+
+**Example**: `cb3n376h66a1r`
+
+<Warning>
+Keep your Secret Key confidential. Never commit it to public repositories or share it publicly.
+</Warning>
+
+### MaileeSubdomain (Required)
+
+Your Mailee.me account subdomain. This identifies your specific Mailee.me instance.
+
+**Example**: If your Mailee.me dashboard is at `seusite.mailee.me`, your subdomain is `seusite`
+
+## Getting Your API Credentials
+
+<Steps>
+
+<Step title="Log in to your Mailee.me account">
+
+Navigate to your Mailee.me dashboard in your web browser.
+
+</Step>
+
+<Step title="Find your API settings">
+
+Your API URL follows this format:
+
+```
+http://api.{SECRET_KEY}.{SUBDOMAIN}.mailee.me/
+```
+
+For example: `http://api.cb3n376h66a1r.seusite.mailee.me/`
+
+In this URL:
+- Secret Key = `cb3n376h66a1r`
+- Subdomain = `seusite`
+
+</Step>
+
+<Step title="Extract the values">
+
+From your API URL, extract:
+1. The alphanumeric string between `api.` and the second dot - this is your **MaileeKey**
+2. The subdomain between the second dot and `.mailee.me` - this is your **MaileeSubdomain**
+
+</Step>
+
+<Step title="Add to Web.Config">
+
+Place these values in your Web.Config as shown in the basic configuration example above.
+
+</Step>
+
+</Steps>
+
+## Configuration Examples
+
+<CodeGroup>
+
+```xml Production Environment
+<configuration>
+  <appSettings>
+    <!-- Mailee Production API -->
+    <add key="MaileeKey" value="cb3n376h66a1r"/>
+    <add key="MaileeSubdomain" value="production"/>
+    
+    <!-- Other app settings -->
+    <add key="Environment" value="Production"/>
+  </appSettings>
+</configuration>
+```
+
+```xml Development Environment
+<configuration>
+  <appSettings>
+    <!-- Mailee Development/Testing API -->
+    <add key="MaileeKey" value="abc123def456"/>
+    <add key="MaileeSubdomain" value="development"/>
+    
+    <!-- Other app settings -->
+    <add key="Environment" value="Development"/>
+  </appSettings>
+</configuration>
+```
+
+```xml Multiple Environments with Transforms
+<!-- Web.config (base) -->
+<configuration>
+  <appSettings>
+    <add key="MaileeKey" value=""/>
+    <add key="MaileeSubdomain" value=""/>
+  </appSettings>
+</configuration>
+
+<!-- Web.Release.config (transform) -->
+<configuration xmlns:xdt="http://schemas.microsoft.com/XML-Document-Transform">
+  <appSettings>
+    <add key="MaileeKey" value="production-secret-key" 
+         xdt:Transform="SetAttributes" xdt:Locator="Match(key)"/>
+    <add key="MaileeSubdomain" value="production" 
+         xdt:Transform="SetAttributes" xdt:Locator="Match(key)"/>
+  </appSettings>
+</configuration>
+```
+
+</CodeGroup>
+
+## How Configuration Works
+
+The SDK automatically reads configuration values from Web.Config when making API calls. Here's what happens internally:
+
+```csharp
+// From Config.cs - SDK internal implementation
+public static string UrlAPI
+{
+    get
+    {
+        // Read configuration from Web.Config
+        string secretKey = ConfigurationManager.AppSettings["MaileeKey"];
+        string subdomain = ConfigurationManager.AppSettings["MaileeSubdomain"];
+
+        // Construct API URL
+        string urlAPI = string.Format("http://api.{0}.{1}.mailee.me/", 
+                                      secretKey, subdomain);
+
+        return urlAPI;
+    }
+}
+```
+
+<Info>
+You don't need to manually construct API URLs or pass credentials to methods. The SDK handles this automatically using the Web.Config values.
+</Info>
+
+## Security Best Practices
+
+<Warning>
+Follow these security guidelines to protect your API credentials:
+</Warning>
+
+### 1. Never Commit Credentials to Source Control
+
+Add Web.config to your `.gitignore` file or use configuration transforms:
+
+```
+# .gitignore
+Web.config
+*.config
+```
+
+Provide a template file instead:
+
+```xml Web.config.template
+<configuration>
+  <appSettings>
+    <add key="MaileeKey" value="YOUR_SECRET_KEY_HERE"/>
+    <add key="MaileeSubdomain" value="YOUR_SUBDOMAIN_HERE"/>
+  </appSettings>
+</configuration>
+```
+
+### 2. Use Environment-Specific Configuration
+
+Use Web.config transforms to manage different credentials for each environment:
+
+- `Web.config` - Development credentials
+- `Web.Release.config` - Production credentials
+- `Web.Staging.config` - Staging credentials
+
+### 3. Restrict File Permissions
+
+Ensure your Web.config file has restricted permissions on the server:
+
+```
+- Read: Application Pool Identity only
+- Write: Administrators only
+- No public access
+```
+
+### 4. Use Separate API Keys
+
+Create separate Mailee.me accounts or API keys for:
+- Development environment
+- Testing/staging environment
+- Production environment
+
+This allows you to:
+- Isolate test data from production data
+- Revoke compromised keys without affecting other environments
+- Track API usage per environment
+
+### 5. Encrypt Configuration Sections
+
+.NET allows encrypting sensitive configuration sections:
+
+```bash
+# Encrypt appSettings section
+aspnet_regiis -pef "appSettings" "C:\Path\To\YourApp"
+
+# Decrypt when needed
+aspnet_regiis -pdf "appSettings" "C:\Path\To\YourApp"
+```
+
+The SDK will automatically decrypt and read the values.
+
+### 6. Monitor API Usage
+
+Regularly review your Mailee.me API usage logs to detect:
+- Unusual activity patterns
+- Unauthorized access attempts
+- API quota consumption
+
+## Troubleshooting Configuration
+
+<Tip>
+Use these tips to diagnose configuration issues:
+</Tip>
+
+### Verify Configuration is Loaded
+
+Add temporary debug code to verify your configuration:
+
+```csharp
+using System.Configuration;
+
+// Check if values are loaded
+string key = ConfigurationManager.AppSettings["MaileeKey"];
+string subdomain = ConfigurationManager.AppSettings["MaileeSubdomain"];
+
+if (string.IsNullOrEmpty(key))
+{
+    throw new Exception("MaileeKey not found in Web.Config");
+}
+
+if (string.IsNullOrEmpty(subdomain))
+{
+    throw new Exception("MaileeSubdomain not found in Web.Config");
+}
+
+Console.WriteLine("Configuration loaded successfully");
+```
+
+### Test API Connectivity
+
+Create a simple test to verify your credentials work:
+
+```csharp
+try
+{
+    // Try to fetch contacts (will return empty list if no contacts exist)
+    List<Mailee.Contact> contacts = Mailee.Contact.findAll();
+    Console.WriteLine("API connection successful!");
+}
+catch (Mailee.RestExcepction ex)
+{
+    if (ex.StatusCode == 401)
+    {
+        Console.WriteLine("Authentication failed. Check your MaileeKey and MaileeSubdomain.");
+    }
+    else
+    {
+        Console.WriteLine("API Error: " + ex.StatusCode + " - " + ex.StatusDesciption);
+    }
+}
+```
+
+### Common Configuration Errors
+
+<Info>
+**Missing configuration keys**: Ensure both `MaileeKey` and `MaileeSubdomain` exist in `<appSettings>`
+</Info>
+
+<Info>
+**Wrong configuration section**: Settings must be in `<appSettings>`, not `<connectionStrings>` or custom sections
+</Info>
+
+<Info>
+**Typos in key names**: The SDK looks for exact key names: `MaileeKey` and `MaileeSubdomain` (case-sensitive)
+</Info>
+
+<Info>
+**Multiple Web.config files**: In web applications with subdirectories, ensure you're editing the root Web.config
+</Info>
+
+<Info>
+**Configuration caching**: After changing Web.config, restart your application or IIS to reload the configuration
+</Info>
+
+## Advanced Configuration
+
+### Using App.config for Console/Desktop Applications
+
+For non-web applications, use App.config with the same format:
+
+```xml App.config
+<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+  <appSettings>
+    <add key="MaileeKey" value="cb3n376h66a1r"/>
+    <add key="MaileeSubdomain" value="seusite"/>
+  </appSettings>
+</configuration>
+```
+
+### Reading Configuration Programmatically
+
+While the SDK handles configuration automatically, you can read values manually:
+
+```csharp
+using System.Configuration;
+
+// Read configuration values
+string maileeKey = ConfigurationManager.AppSettings["MaileeKey"];
+string maileeSubdomain = ConfigurationManager.AppSettings["MaileeSubdomain"];
+
+// Construct API URL (same as SDK does internally)
+string apiUrl = string.Format("http://api.{0}.{1}.mailee.me/", 
+                              maileeKey, maileeSubdomain);
+
+Console.WriteLine("Using API URL: " + apiUrl);
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+
+<Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+  Create your first contact with the configured SDK
+</Card>
+
+<Card title="Managing Contacts" icon="users" href="/core/contacts">
+  Learn about creating, updating, and finding contacts
+</Card>
+
+<Card title="Error Handling" icon="triangle-exclamation" href="/advanced/error-handling">
+  Implement robust error handling in your application
+</Card>
+
+<Card title="API Reference" icon="book" href="/api/contact">
+  Explore the complete API documentation
+</Card>
+
+</CardGroup>

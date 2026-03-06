@@ -1,0 +1,227 @@
+---
+title: 'Lists'
+description: 'Learn how to organize and manage contact lists in the Mailee.me platform using the .NET SDK'
+---
+
+Lists are collections of contacts that help you organize your audience into meaningful segments. Each list can contain multiple contacts and includes metadata like company information and social media links.
+
+## When to Use Lists
+
+Use the List class when you need to:
+
+- Organize contacts into different audiences (e.g., customers, prospects, newsletter subscribers)
+- Create targeted email campaigns for specific groups
+- Manage list metadata and branding information
+- Retrieve all contacts within a specific list
+
+## Creating a List
+
+Create a new list with descriptive information:
+
+```csharp
+// Create List
+Mailee.List list = new Mailee.List();
+list.Name = "Nome da Lista";
+list.Description = "Descrição da Lista";
+list.Company = "Empresa";
+list.Address = "Rua Teste S/N";
+list.Phone = "(71) 9999-8888";
+list.Site = "www.site.com";
+list.Facebook = "facebook.com/seulogin";
+list.Twitter = "twitter.com/seulogin";
+list.Active = true;
+
+// Save
+list.save();
+```
+
+<Info>The `Active` property controls whether the list is currently active for campaigns.</Info>
+
+## Updating a List
+
+Retrieve and update an existing list:
+
+```csharp
+// Find List
+Mailee.List list = Mailee.List.findById(1);
+
+// Update Fields
+list.Name = "Nome da Lista";
+list.Description = "Descrição da Lista";
+list.Company = "Empresa";
+list.Address = "Rua Teste S/N";
+list.Phone = "(71) 9999-8888";
+list.Site = "www.site.com";
+list.Facebook = "facebook.com/seulogin";
+list.Twitter = "twitter.com/seulogin";
+list.Active = true;
+
+// Save
+list.save();
+```
+
+## Retrieving Lists
+
+<AccordionGroup>
+  <Accordion title="Find All Lists">
+    Retrieve all lists from your account:
+
+    ```csharp
+    // Find All Lists
+    List<Mailee.List> lists = Mailee.List.findAll();
+    ```
+
+    This returns a collection of all your lists with their properties and contact counts.
+  </Accordion>
+
+  <Accordion title="Find List by ID">
+    Retrieve a specific list using its ID:
+
+    ```csharp
+    // Find List by Id
+    Mailee.List list = Mailee.List.findById(1);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Managing Contacts in Lists
+
+Contacts can be subscribed to or unsubscribed from lists using the Contact class:
+
+### Subscribe a Contact
+
+```csharp
+Mailee.Contact contact = Mailee.Contact.findById(1);
+
+// Subscribe by list ID
+contact.Subscribe(99);
+
+// Subscribe by list name
+contact.Subscribe("clients");
+```
+
+### Unsubscribe a Contact
+
+```csharp
+Mailee.Contact contact = Mailee.Contact.findById(1);
+
+// Unsubscribe by list ID
+contact.Unsubscribe(99);
+
+// Unsubscribe by list name
+contact.Unsubscribe("clients");
+```
+
+<Note>See the [Contacts](/core/contacts) page for more details on managing list subscriptions.</Note>
+
+## Available Properties
+
+The List class includes the following properties:
+
+- **Id** - Mailee.me list ID (read-only after creation)
+- **Name** - List name (required)
+- **Description** - Detailed description of the list's purpose
+- **Company** - Company name associated with the list
+- **Address** - Physical address
+- **Phone** - Contact phone number
+- **Site** - Website URL
+- **Facebook** - Facebook profile or page URL
+- **Twitter** - Twitter profile URL
+- **Active** - Whether the list is active (boolean)
+- **ListsContactsCount** - Number of contacts in the list (read-only)
+- **Total** - Total subscriber count (read-only)
+- **ClientId** - Your Mailee.me client ID (read-only)
+- **CreatedAt** - Timestamp when list was created (read-only)
+- **DeletedAt** - Timestamp when list was deleted (read-only)
+
+## List Organization Strategies
+
+<Steps>
+  <Step title="Segment by customer type">
+    Create separate lists for different customer segments:
+    - Active customers
+    - Prospects
+    - VIP members
+    - Trial users
+  </Step>
+
+  <Step title="Use descriptive names">
+    Give your lists clear, descriptive names that indicate their purpose:
+    ```csharp
+    list.Name = "Q4 2023 Product Launch - Beta Testers";
+    list.Description = "Early access testers for our Q4 product launch";
+    ```
+  </Step>
+
+  <Step title="Keep lists active and maintained">
+    Regularly review and update your lists:
+    - Set `Active = false` for lists no longer in use
+    - Monitor the `ListsContactsCount` property
+    - Remove duplicate contacts
+  </Step>
+
+  <Step title="Add branding information">
+    Include company details for better list management:
+    ```csharp
+    list.Company = "Your Company Name";
+    list.Site = "www.yoursite.com";
+    list.Facebook = "facebook.com/yourcompany";
+    list.Twitter = "twitter.com/yourcompany";
+    ```
+  </Step>
+</Steps>
+
+## Best Practices
+
+<Warning>**Avoid creating too many small lists.** Instead of creating a new list for every minor segment, consider using fewer, broader lists and leveraging segments or dynamic fields for targeting.</Warning>
+
+<Tip>Use the `ListsContactsCount` property to monitor list growth and engagement over time.</Tip>
+
+### Error Handling
+
+Always wrap list operations in error handling:
+
+```csharp
+try
+{
+    Mailee.List list = new Mailee.List();
+    list.Name = "Newsletter Subscribers";
+    list.Description = "Monthly newsletter audience";
+    list.Active = true;
+    list.save();
+}
+catch (Mailee.RestExcepction ex)
+{
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine(error);
+    }
+    Console.WriteLine($"Status Code: {ex.StatusCode}");
+}
+```
+
+## Working with Segments
+
+Lists can be further divided into segments for more targeted campaigns. When creating messages, you can specify both a list ID and a segment ID:
+
+```csharp
+Mailee.Message message = new Mailee.Message();
+message.ListId = 1;        // Target a specific list
+message.SegmentId = 5;     // Further narrow to a segment
+// ... configure message properties
+message.save();
+```
+
+<Info>Segments allow you to target subsets of a list based on specific criteria without creating entirely new lists.</Info>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Contacts" icon="user" href="/core/contacts">
+    Learn how to manage individual contacts
+  </Card>
+  
+  <Card title="Messages" icon="envelope" href="/core/messages">
+    Send campaigns to your lists
+  </Card>
+</CardGroup>

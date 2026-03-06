@@ -1,0 +1,323 @@
+---
+title: 'Templates'
+description: 'Learn how to create and manage reusable email templates in the Mailee.me platform using the .NET SDK'
+---
+
+Templates are reusable email designs that provide consistent branding and structure for your campaigns. Instead of creating HTML from scratch for each message, you can define templates once and reuse them across multiple campaigns.
+
+## When to Use Templates
+
+Use the Template class when you need to:
+
+- Create consistent, branded email designs
+- Reuse the same layout across multiple campaigns
+- Define editable regions for dynamic content
+- Maintain a library of email designs
+- Streamline campaign creation workflows
+
+## Creating a Template
+
+Create a new template with HTML content:
+
+```csharp
+// Create Template
+Mailee.Template template = new Mailee.Template();
+template.Title = "Título do Template";
+template.Html = "<html><body>Hello World!</body></html>";
+
+// Save
+template.save();
+```
+
+<Info>The `Title` is used for internal organization and is not visible to email recipients.</Info>
+
+## Updating a Template
+
+Retrieve and modify an existing template:
+
+```csharp
+// Find Template
+Mailee.Template template = Mailee.Template.findById(1);
+
+// Update Fields
+template.Title = "Título do Template";
+template.Html = "<html><body>Hello World!</body></html>";
+
+// Save
+template.save();
+```
+
+<Warning>Updating a template affects all future messages that use it. Existing sent messages remain unchanged.</Warning>
+
+## Retrieving Templates
+
+<AccordionGroup>
+  <Accordion title="Find All Templates">
+    Retrieve all templates from your account:
+
+    ```csharp
+    // Find All Templates
+    List<Mailee.Template> templates = Mailee.Template.findAll();
+    ```
+
+    This returns a collection of all your templates with their properties.
+  </Accordion>
+
+  <Accordion title="Find Template by ID">
+    Retrieve a specific template using its ID:
+
+    ```csharp
+    // Find Template by Id
+    Mailee.Template template = Mailee.Template.findById(1);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Using Templates in Messages
+
+Once created, reference a template when creating a message:
+
+```csharp
+Mailee.Message message = new Mailee.Message();
+message.Title = "Monthly Newsletter";
+message.Subject = "Your Monthly Update";
+message.FromName = "Your Company";
+message.FromEmail = "news@company.com";
+message.ReplyEmail = "support@company.com";
+message.TemplateId = 1;  // Use template ID
+message.Analytics = true;
+message.ListId = 1;
+
+message.save();
+```
+
+<Note>When using a template, you don't need to set the `Html` property on the message.</Note>
+
+## Template Editable Regions
+
+Templates can include editable and repeatable regions for dynamic content. When creating a message with a template, populate these regions:
+
+```csharp
+Mailee.Message message = new Mailee.Message();
+message.TemplateId = 1;
+
+// Populate editable regions
+message.Edit.Add(new KeyValuePair<int, string>(1, "<h1>Welcome Back!</h1>"));
+message.Edit.Add(new KeyValuePair<int, string>(2, "<p>Here's what's new this month...</p>"));
+
+// Add repeatable content (like product listings)
+message.Repeats.Add(new KeyValuePair<int, string>(1, "<div class='product'>Product 1</div>"));
+message.Repeats.Add(new KeyValuePair<int, string>(2, "<div class='product'>Product 2</div>"));
+
+message.Title = "Newsletter";
+message.Subject = "Monthly Update";
+message.FromName = "Company";
+message.FromEmail = "news@company.com";
+message.ListId = 1;
+
+message.save();
+```
+
+## Template Structure Best Practices
+
+<Steps>
+  <Step title="Use responsive HTML">
+    Create templates that work across different email clients and devices:
+
+    ```html
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          @media only screen and (max-width: 600px) {
+            .container { width: 100% !important; }
+          }
+        </style>
+      </head>
+      <body>
+        <table class="container" width="600" cellpadding="0" cellspacing="0">
+          <!-- Your content here -->
+        </table>
+      </body>
+    </html>
+    ```
+  </Step>
+
+  <Step title="Include unsubscribe links">
+    Always include an unsubscribe link in your templates to comply with email regulations:
+
+    ```html
+    <a href="{{unsubscribe_url}}">Unsubscribe from this list</a>
+    ```
+  </Step>
+
+  <Step title="Define clear editable regions">
+    Structure templates with well-defined areas for dynamic content that varies between campaigns.
+  </Step>
+
+  <Step title="Test thoroughly">
+    Test your templates across multiple email clients (Gmail, Outlook, Apple Mail, etc.) before using in production.
+  </Step>
+</Steps>
+
+## Available Properties
+
+The Template class includes the following properties:
+
+- **Id** - Mailee.me template ID (read-only after creation)
+- **Title** - Template name for internal organization (required)
+- **Html** - HTML content of the template (required)
+- **ClientId** - Your Mailee.me client ID (read-only)
+- **CreatedAt** - Timestamp when created (read-only)
+- **UpdatedAt** - Timestamp when last modified (read-only)
+- **DeletedAt** - Timestamp when deleted (read-only)
+- **Simulations** - Template simulation data (read-only)
+- **ThumbContentType** - Thumbnail image MIME type (read-only)
+- **ThumbFileName** - Thumbnail filename (read-only)
+- **ThumbFileSize** - Thumbnail file size (read-only)
+- **ThumbUpdatedAt** - Thumbnail last update time (read-only)
+
+## Template Design Tips
+
+<AccordionGroup>
+  <Accordion title="Use inline CSS">
+    Many email clients strip out `<style>` tags, so use inline CSS for reliable styling:
+
+    ```html
+    <p style="color: #333; font-size: 16px; line-height: 1.5;">
+      Your content here
+    </p>
+    ```
+  </Accordion>
+
+  <Accordion title="Use tables for layout">
+    Email clients have limited CSS support. Use tables for reliable layout:
+
+    ```html
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="50%">Column 1</td>
+        <td width="50%">Column 2</td>
+      </tr>
+    </table>
+    ```
+  </Accordion>
+
+  <Accordion title="Optimize images">
+    Use web-optimized images and always include alt text:
+
+    ```html
+    <img src="https://yoursite.com/image.jpg" 
+         alt="Descriptive text" 
+         width="600" 
+         style="display: block; max-width: 100%;">
+    ```
+  </Accordion>
+
+  <Accordion title="Keep it simple">
+    Simpler templates are more reliable across email clients. Avoid:
+    - Complex CSS animations
+    - Background images
+    - Custom fonts (use web-safe fonts)
+    - JavaScript (not supported)
+  </Accordion>
+</AccordionGroup>
+
+## Template Organization
+
+Create a template library for different campaign types:
+
+```csharp
+// Newsletter template
+Mailee.Template newsletter = new Mailee.Template();
+newsletter.Title = "Monthly Newsletter Template";
+newsletter.Html = "<!-- Newsletter HTML -->";
+newsletter.save();
+
+// Promotional template
+Mailee.Template promo = new Mailee.Template();
+promo.Title = "Promotional Campaign Template";
+promo.Html = "<!-- Promo HTML -->";
+promo.save();
+
+// Transactional template
+Mailee.Template transactional = new Mailee.Template();
+transactional.Title = "Order Confirmation Template";
+transactional.Html = "<!-- Transactional HTML -->";
+transactional.save();
+```
+
+<Tip>Use descriptive titles to easily identify templates when creating campaigns.</Tip>
+
+## Error Handling
+
+Always wrap template operations in error handling:
+
+```csharp
+try
+{
+    Mailee.Template template = new Mailee.Template();
+    template.Title = "New Template";
+    template.Html = "<html><body>Content</body></html>";
+    template.save();
+}
+catch (Mailee.RestExcepction ex)
+{
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine(error);
+    }
+    Console.WriteLine($"Status: {ex.StatusCode} - {ex.StatusDesciption}");
+}
+```
+
+## Common Template Patterns
+
+### Header and Footer
+
+```html
+<html>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif;">
+  <!-- Header -->
+  <table width="100%" bgcolor="#333333">
+    <tr>
+      <td align="center" style="padding: 20px;">
+        <img src="{{logo_url}}" alt="Company Logo" width="150">
+      </td>
+    </tr>
+  </table>
+  
+  <!-- Main Content -->
+  <table width="600" align="center" cellpadding="20">
+    <tr>
+      <td>
+        <!-- Dynamic content goes here -->
+        {{content}}
+      </td>
+    </tr>
+  </table>
+  
+  <!-- Footer -->
+  <table width="100%" bgcolor="#f4f4f4">
+    <tr>
+      <td align="center" style="padding: 20px; font-size: 12px; color: #666;">
+        <p>&copy; 2024 Your Company. All rights reserved.</p>
+        <p><a href="{{unsubscribe_url}}">Unsubscribe</a></p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Messages" icon="envelope" href="/core/messages">
+    Learn how to use templates in messages
+  </Card>
+  
+  <Card title="Lists" icon="list" href="/core/lists">
+    Organize contacts for your campaigns
+  </Card>
+</CardGroup>

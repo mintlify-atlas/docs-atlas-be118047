@@ -1,0 +1,344 @@
+---
+title: 'Reports'
+description: 'Learn how to track and analyze email campaign performance using the Mailee.me .NET SDK'
+---
+
+Reports provide detailed analytics and performance metrics for your email campaigns. Use reports to track opens, returns, and overall campaign effectiveness.
+
+## When to Use Reports
+
+Use the Report class when you need to:
+
+- Track email campaign performance metrics
+- Measure open rates and engagement
+- Monitor bounce rates and delivery issues
+- Analyze campaign effectiveness
+- Generate performance dashboards
+
+## Retrieving a Campaign Report
+
+Get detailed metrics for a specific message by its ID:
+
+```csharp
+// Get Report
+Mailee.Report report = Mailee.Report.findByMessage(messageId);
+```
+
+<Info>Replace `messageId` with the ID of the message you want to analyze.</Info>
+
+## Understanding Report Data
+
+A report contains comprehensive information about your campaign:
+
+### Campaign Information
+
+```csharp
+Mailee.Report report = Mailee.Report.findByMessage(123);
+
+// Basic message details
+Console.WriteLine($"Title: {report.Title}");
+Console.WriteLine($"Subject: {report.Subject}");
+Console.WriteLine($"From: {report.FromName} <{report.FromEmail}>");
+Console.WriteLine($"Reply To: {report.ReplyEmail}");
+Console.WriteLine($"Sent: {report.Date}");
+```
+
+### Performance Metrics
+
+```csharp
+// Engagement metrics
+Console.WriteLine($"Total Recipients: {report.ResultsTotal}");
+Console.WriteLine($"Opened: {report.ResultsOpens}");
+Console.WriteLine($"Not Opened: {report.ResultsNotOpened}");
+Console.WriteLine($"Returns/Bounces: {report.ResultsReturns}");
+
+// Calculate open rate
+if (report.ResultsTotal > 0)
+{
+    double openRate = (double)report.ResultsOpens / report.ResultsTotal * 100;
+    Console.WriteLine($"Open Rate: {openRate:F2}%");
+}
+```
+
+### Campaign Context
+
+```csharp
+// Associated resources
+Console.WriteLine($"List ID: {report.ListId}");
+Console.WriteLine($"Segment ID: {report.SegmentId}");
+Console.WriteLine($"Template ID: {report.TemplateId}");
+Console.WriteLine($"Template Title: {report.TemplateTitle}");
+Console.WriteLine($"Newsletter ID: {report.NewsletterId}");
+Console.WriteLine($"Newsletter Title: {report.NewsletterTitle}");
+```
+
+## Available Report Properties
+
+The Report class includes the following properties:
+
+### Message Details
+- **Title** - Internal message title
+- **Subject** - Email subject line
+- **FromName** - Sender's display name
+- **FromEmail** - Sender's email address
+- **ReplyEmail** - Reply-to email address
+- **Signature** - Email signature content
+- **Date** - Campaign send date
+- **Image** - Campaign thumbnail image
+
+### Performance Metrics
+- **ResultsTotal** - Total number of recipients
+- **ResultsOpens** - Number of unique opens
+- **ResultsReturns** - Number of bounces/returns
+- **ResultsNotOpened** - Number of recipients who didn't open
+
+### Related Resources
+- **ListId** - ID of the target list
+- **SegmentId** - ID of the target segment
+- **TemplateId** - ID of the template used
+- **TemplateTitle** - Name of the template
+- **NewsletterId** - ID of the newsletter
+- **NewsletterTitle** - Name of the newsletter
+
+## Analyzing Campaign Performance
+
+<Steps>
+  <Step title="Retrieve the report">
+    Get the report data for your campaign:
+
+    ```csharp
+    Mailee.Report report = Mailee.Report.findByMessage(messageId);
+    ```
+  </Step>
+
+  <Step title="Calculate key metrics">
+    Compute important performance indicators:
+
+    ```csharp
+    // Open rate
+    double openRate = (double)report.ResultsOpens / report.ResultsTotal * 100;
+    
+    // Bounce rate
+    double bounceRate = (double)report.ResultsReturns / report.ResultsTotal * 100;
+    
+    // Non-engagement rate
+    double nonOpenRate = (double)report.ResultsNotOpened / report.ResultsTotal * 100;
+    ```
+  </Step>
+
+  <Step title="Compare with benchmarks">
+    Evaluate your performance against industry standards or your historical data.
+  </Step>
+
+  <Step title="Take action">
+    Use insights to improve future campaigns:
+    - Low open rate? Test different subject lines
+    - High bounce rate? Clean your contact list
+    - Good performance? Replicate successful patterns
+  </Step>
+</Steps>
+
+## Building a Performance Dashboard
+
+Create a simple dashboard to monitor multiple campaigns:
+
+```csharp
+public class CampaignPerformance
+{
+    public int MessageId { get; set; }
+    public string Title { get; set; }
+    public string Subject { get; set; }
+    public int TotalRecipients { get; set; }
+    public int Opens { get; set; }
+    public int Bounces { get; set; }
+    public double OpenRate { get; set; }
+    public double BounceRate { get; set; }
+}
+
+public List<CampaignPerformance> GetCampaignMetrics(List<int> messageIds)
+{
+    List<CampaignPerformance> metrics = new List<CampaignPerformance>();
+    
+    foreach (int messageId in messageIds)
+    {
+        try
+        {
+            Mailee.Report report = Mailee.Report.findByMessage(messageId);
+            
+            var performance = new CampaignPerformance
+            {
+                MessageId = messageId,
+                Title = report.Title,
+                Subject = report.Subject,
+                TotalRecipients = report.ResultsTotal,
+                Opens = report.ResultsOpens,
+                Bounces = report.ResultsReturns,
+                OpenRate = report.ResultsTotal > 0 
+                    ? (double)report.ResultsOpens / report.ResultsTotal * 100 
+                    : 0,
+                BounceRate = report.ResultsTotal > 0 
+                    ? (double)report.ResultsReturns / report.ResultsTotal * 100 
+                    : 0
+            };
+            
+            metrics.Add(performance);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error retrieving report for message {messageId}: {ex.Message}");
+        }
+    }
+    
+    return metrics;
+}
+```
+
+## Understanding Key Metrics
+
+<AccordionGroup>
+  <Accordion title="Open Rate">
+    The percentage of recipients who opened your email.
+
+    **Calculation:** `(Opens / Total Recipients) × 100`
+
+    **Industry Average:** 15-25% depending on industry
+
+    **Improvement Tips:**
+    - Write compelling subject lines
+    - Optimize send time
+    - Segment your audience
+    - Use personalization
+  </Accordion>
+
+  <Accordion title="Bounce Rate">
+    The percentage of emails that couldn't be delivered.
+
+    **Calculation:** `(Returns / Total Recipients) × 100`
+
+    **Acceptable Range:** Under 2%
+
+    **Improvement Tips:**
+    - Regularly clean your contact list
+    - Remove invalid email addresses
+    - Use double opt-in for new subscribers
+    - Monitor for spam complaints
+  </Accordion>
+
+  <Accordion title="Non-Open Rate">
+    The percentage of recipients who didn't open your email.
+
+    **Calculation:** `(Not Opened / Total Recipients) × 100`
+
+    **Analysis:**
+    - High non-open rates may indicate poor subject lines
+    - Could suggest list hygiene issues
+    - May indicate timing problems
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<Tip>Check reports 24-48 hours after sending for accurate metrics. Most opens occur within this timeframe.</Tip>
+
+<Warning>**Avoid making decisions based on single campaigns.** Analyze trends across multiple campaigns for reliable insights.</Warning>
+
+### Track Trends Over Time
+
+```csharp
+public void TrackCampaignTrends()
+{
+    // Get recent message IDs
+    List<Mailee.Message> messages = Mailee.Message.findAll();
+    
+    foreach (var message in messages.Take(10)) // Last 10 campaigns
+    {
+        Mailee.Report report = Mailee.Report.findByMessage(message.Id);
+        
+        double openRate = report.ResultsTotal > 0 
+            ? (double)report.ResultsOpens / report.ResultsTotal * 100 
+            : 0;
+        
+        Console.WriteLine($"{report.Date} - {report.Title}: {openRate:F2}% open rate");
+    }
+}
+```
+
+## Error Handling
+
+Always wrap report retrieval in error handling:
+
+```csharp
+try
+{
+    Mailee.Report report = Mailee.Report.findByMessage(messageId);
+    
+    // Process report data
+    Console.WriteLine($"Campaign: {report.Title}");
+    Console.WriteLine($"Opens: {report.ResultsOpens}/{report.ResultsTotal}");
+}
+catch (Mailee.RestExcepction ex)
+{
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine($"Error: {error}");
+    }
+    Console.WriteLine($"Status: {ex.StatusCode} - {ex.StatusDesciption}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Unexpected error: {ex.Message}");
+}
+```
+
+## Exporting Report Data
+
+Export metrics for external analysis:
+
+```csharp
+public void ExportReportToCSV(int messageId, string filePath)
+{
+    try
+    {
+        Mailee.Report report = Mailee.Report.findByMessage(messageId);
+        
+        using (StreamWriter writer = new StreamWriter(filePath))
+        {
+            // Write header
+            writer.WriteLine("Metric,Value");
+            
+            // Write data
+            writer.WriteLine($"Title,\"{report.Title}\"");
+            writer.WriteLine($"Subject,\"{report.Subject}\"");
+            writer.WriteLine($"From,\"{report.FromName}\"");
+            writer.WriteLine($"Date,{report.Date}");
+            writer.WriteLine($"Total Recipients,{report.ResultsTotal}");
+            writer.WriteLine($"Opens,{report.ResultsOpens}");
+            writer.WriteLine($"Bounces,{report.ResultsReturns}");
+            writer.WriteLine($"Not Opened,{report.ResultsNotOpened}");
+            
+            double openRate = report.ResultsTotal > 0 
+                ? (double)report.ResultsOpens / report.ResultsTotal * 100 
+                : 0;
+            writer.WriteLine($"Open Rate,{openRate:F2}%");
+        }
+        
+        Console.WriteLine($"Report exported to {filePath}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Export failed: {ex.Message}");
+    }
+}
+```
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Messages" icon="envelope" href="/core/messages">
+    Learn how to create campaigns to track
+  </Card>
+  
+  <Card title="Lists" icon="list" href="/core/lists">
+    Manage your contact lists
+  </Card>
+</CardGroup>

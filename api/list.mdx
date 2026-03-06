@@ -1,0 +1,288 @@
+---
+title: List
+description: Manage mailing lists in your Mailee.me account
+---
+
+## Overview
+
+The `List` class represents a mailing list in your Mailee.me account. Use it to create, retrieve, and update mailing lists that organize your contacts.
+
+## Properties
+
+### Basic Information
+
+<ResponseField name="Id" type="int">
+  Unique identifier for the list in Mailee.me
+</ResponseField>
+
+<ResponseField name="Name" type="string">
+  Name of the mailing list
+</ResponseField>
+
+<ResponseField name="Description" type="string">
+  Detailed description of the list's purpose
+</ResponseField>
+
+<ResponseField name="Active" type="bool">
+  Whether the list is currently active
+</ResponseField>
+
+### Organization Details
+
+<ResponseField name="Company" type="string">
+  Company associated with this list
+</ResponseField>
+
+<ResponseField name="Address" type="string">
+  Physical address for the company/organization
+</ResponseField>
+
+<ResponseField name="Phone" type="string">
+  Contact phone number
+</ResponseField>
+
+<ResponseField name="Site" type="string">
+  Website URL
+</ResponseField>
+
+### Social Media
+
+<ResponseField name="Facebook" type="string">
+  Facebook page URL or username
+</ResponseField>
+
+<ResponseField name="Twitter" type="string">
+  Twitter handle or URL
+</ResponseField>
+
+### Statistics
+
+<ResponseField name="ListsContactsCount" type="int">
+  Total number of contacts subscribed to this list
+</ResponseField>
+
+<ResponseField name="Total" type="int">
+  Total count metric for the list
+</ResponseField>
+
+### System Fields
+
+<ResponseField name="ClientId" type="int">
+  Your account ID in Mailee.me
+</ResponseField>
+
+<ResponseField name="CreatedAt" type="DateTime?">
+  When the list was created
+</ResponseField>
+
+<ResponseField name="DeletedAt" type="DateTime?">
+  When the list was deleted (soft delete)
+</ResponseField>
+
+## Constructors
+
+### List()
+
+Creates a new empty list instance.
+
+```csharp
+Mailee.List list = new Mailee.List();
+```
+
+### List(string name, string description, string company, string address, string phone, string site)
+
+Creates a new list with initial values.
+
+<ParamField path="name" type="string" required>
+  List name
+</ParamField>
+
+<ParamField path="description" type="string" required>
+  List description
+</ParamField>
+
+<ParamField path="company" type="string" required>
+  Company name
+</ParamField>
+
+<ParamField path="address" type="string" required>
+  Physical address
+</ParamField>
+
+<ParamField path="phone" type="string" required>
+  Phone number
+</ParamField>
+
+<ParamField path="site" type="string" required>
+  Website URL
+</ParamField>
+
+## Methods
+
+### Static Methods
+
+#### findAll()
+
+Retrieves all lists from your account.
+
+```csharp
+public static List<Mailee.List> findAll()
+```
+
+**Returns:** `List<Mailee.List>` - Collection of all mailing lists
+
+**Example:**
+```csharp
+List<Mailee.List> lists = Mailee.List.findAll();
+foreach (var list in lists)
+{
+    Console.WriteLine($"List: {list.Name} - Contacts: {list.ListsContactsCount}");
+}
+```
+
+---
+
+#### findById(int id)
+
+Retrieves a specific list by its ID.
+
+```csharp
+public static Mailee.List findById(int id)
+```
+
+<ParamField path="id" type="int" required>
+  The list ID
+</ParamField>
+
+**Returns:** `Mailee.List` - The list object, or empty list if not found
+
+**Example:**
+```csharp
+Mailee.List list = Mailee.List.findById(1);
+Console.WriteLine($"List Name: {list.Name}");
+```
+
+### Instance Methods
+
+#### save()
+
+Creates a new list or updates an existing one. If `Id` is 0, creates a new list. Otherwise, updates the existing list.
+
+```csharp
+public string save()
+```
+
+**Returns:** `string` - XML response from the API
+
+**Example - Create:**
+```csharp
+// Create List
+Mailee.List list = new Mailee.List();
+list.Name = "Nome da Lista";
+list.Description = "Descrição da Lista";
+list.Company = "Empresa";
+list.Address = "Rua Teste S/N";
+list.Phone = "(71) 9999-8888";
+list.Site = "www.site.com";
+list.Facebook = "facebook.com/seulogin";
+list.Twitter = "twitter.com/seulogin";
+list.Active = true;
+
+// Save
+list.save();
+```
+
+**Example - Update:**
+```csharp
+// Find List
+Mailee.List list = Mailee.List.findById(1);
+
+// Update Fields
+list.Name = "Updated List Name";
+list.Description = "Updated Description";
+list.Active = true;
+
+// Save
+list.save();
+```
+
+## Complete Example
+
+Here's a complete example showing how to create and manage a mailing list:
+
+```csharp
+using System;
+using System.Collections.Generic;
+using Mailee;
+
+try
+{
+    // Create a new list
+    Mailee.List newList = new Mailee.List();
+    newList.Name = "Newsletter Subscribers";
+    newList.Description = "Monthly newsletter recipients";
+    newList.Company = "My Company";
+    newList.Address = "123 Main Street";
+    newList.Phone = "(555) 123-4567";
+    newList.Site = "www.mycompany.com";
+    newList.Facebook = "facebook.com/mycompany";
+    newList.Twitter = "twitter.com/mycompany";
+    newList.Active = true;
+    
+    // Save the list
+    newList.save();
+    Console.WriteLine($"List created with ID: {newList.Id}");
+    
+    // Retrieve all lists
+    List<Mailee.List> allLists = Mailee.List.findAll();
+    Console.WriteLine($"Total lists: {allLists.Count}");
+    
+    // Find and update a specific list
+    Mailee.List existingList = Mailee.List.findById(newList.Id);
+    existingList.Description = "Updated description";
+    existingList.save();
+    
+    Console.WriteLine("List updated successfully");
+}
+catch (Mailee.RestException ex)
+{
+    Console.WriteLine("API Error:");
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine($"- {error}");
+    }
+    Console.WriteLine($"Status: {ex.StatusCode} - {ex.StatusDescription}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error: {ex.Message}");
+}
+```
+
+## Error Handling
+
+All methods may throw `Mailee.RestException` on API errors:
+
+```csharp
+try
+{
+    Mailee.List list = new Mailee.List();
+    list.Name = "Test List";
+    list.save();
+}
+catch (Mailee.RestException ex)
+{
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine(error);
+    }
+    Console.WriteLine($"Status Code: {ex.StatusCode}");
+    Console.WriteLine($"Status Description: {ex.StatusDescription}");
+}
+```
+
+## Related Resources
+
+- [Contact](/api/contact) - Manage contacts and subscribe them to lists
+- [Message](/api/message) - Send messages to lists
+- [Configuration](/configuration) - API setup guide

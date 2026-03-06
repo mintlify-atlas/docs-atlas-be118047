@@ -1,0 +1,374 @@
+---
+title: 'Dynamic Fields'
+description: 'Work with custom fields on Contact objects using DynamicValues'
+---
+
+## Overview
+
+The Mailee.me .NET SDK allows you to add custom fields to contacts using the `DynamicValues` property. This feature enables you to store additional contact information beyond the standard fields.
+
+## Understanding DynamicValues
+
+The `DynamicValues` property is a `List<KeyValuePair<string, string>>` that allows you to add unlimited custom fields to a contact. Each dynamic field consists of a key (field name) and a value.
+
+### Property Definition
+
+From the Contact class (Contact.cs:290-303):
+
+```csharp
+public List<KeyValuePair<string, string>> DynamicValues
+{
+    get
+    {
+        if (_dynamicValues == null)
+            _dynamicValues = new List<KeyValuePair<string, string>>();
+        
+        return _dynamicValues;
+    }
+    set
+    {
+        _dynamicValues = value;
+    }
+}
+```
+
+<Info>
+The DynamicValues property is automatically initialized to an empty list if it's null, so you can always safely add items without checking for null.
+</Info>
+
+## Adding Custom Fields
+
+### Basic Usage
+
+Here's how to add custom fields when creating a new contact:
+
+```csharp
+using Mailee;
+
+// Create a new contact
+Contact contact = new Contact();
+contact.Email = "john.doe@example.com";
+contact.Name = "John Doe";
+contact.Company = "Acme Corp";
+
+// Add custom fields
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Department", "Sales"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Employee ID", "EMP-12345"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Start Date", "2024-01-15"));
+
+// Save the contact
+contact.save();
+```
+
+### Using Collection Initializer
+
+You can also initialize the dynamic fields using collection initializer syntax:
+
+```csharp
+Contact contact = new Contact
+{
+    Email = "jane.smith@example.com",
+    Name = "Jane Smith",
+    DynamicValues = new List<KeyValuePair<string, string>>
+    {
+        new KeyValuePair<string, string>("Membership Level", "Gold"),
+        new KeyValuePair<string, string>("Loyalty Points", "5000"),
+        new KeyValuePair<string, string>("Preferred Language", "English")
+    }
+};
+
+contact.save();
+```
+
+## Updating Custom Fields
+
+When updating a contact with custom fields:
+
+```csharp
+// Find existing contact
+Contact contact = Contact.findById(123);
+
+// Clear existing dynamic values (optional)
+contact.DynamicValues.Clear();
+
+// Add or update custom fields
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Status", "Active"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Last Purchase", "2024-03-06"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Subscription Tier", "Premium"));
+
+// Save changes
+contact.save();
+```
+
+<Warning>
+When you save a contact with DynamicValues, all custom fields are sent to the API. The API behavior determines whether fields are merged or replaced. Test your implementation to understand the exact behavior.
+</Warning>
+
+## Working with Dynamic Fields
+
+### Checking for Existing Fields
+
+```csharp
+public string GetDynamicValue(Contact contact, string key)
+{
+    var field = contact.DynamicValues.FirstOrDefault(kv => kv.Key == key);
+    return field.Key != null ? field.Value : null;
+}
+
+// Usage
+Contact contact = Contact.findById(123);
+string department = GetDynamicValue(contact, "Department");
+
+if (!string.IsNullOrEmpty(department))
+{
+    Console.WriteLine($"Department: {department}");
+}
+```
+
+### Updating Specific Field
+
+```csharp
+public void SetDynamicValue(Contact contact, string key, string value)
+{
+    // Remove existing value if present
+    var existingField = contact.DynamicValues.FirstOrDefault(kv => kv.Key == key);
+    if (existingField.Key != null)
+    {
+        contact.DynamicValues.Remove(existingField);
+    }
+    
+    // Add new value
+    contact.DynamicValues.Add(new KeyValuePair<string, string>(key, value));
+}
+
+// Usage
+Contact contact = Contact.findById(123);
+SetDynamicValue(contact, "Status", "Premium");
+contact.save();
+```
+
+### Bulk Operations
+
+```csharp
+public void AddDynamicFields(Contact contact, Dictionary<string, string> fields)
+{
+    foreach (var field in fields)
+    {
+        contact.DynamicValues.Add(new KeyValuePair<string, string>(field.Key, field.Value));
+    }
+}
+
+// Usage
+var customFields = new Dictionary<string, string>
+{
+    { "Source", "Website" },
+    { "Campaign", "Spring2024" },
+    { "Referrer", "Google Ads" },
+    { "Interest", "Technology" }
+};
+
+Contact contact = new Contact();
+contact.Email = "prospect@example.com";
+contact.Name = "New Prospect";
+AddDynamicFields(contact, customFields);
+contact.save();
+```
+
+## API Transmission Format
+
+When you save a contact, dynamic fields are transmitted to the API with the following format (from Contact.cs:1062-1063):
+
+```csharp
+foreach (KeyValuePair<string, string> dynamicValue in this.DynamicValues)
+    pars.Add(new RestParameter(
+        string.Format("contact[dynamic_attributes][{0}]", dynamicValue.Key), 
+        dynamicValue.Value
+    ));
+```
+
+This creates parameters like:
+- `contact[dynamic_attributes][Department]=Sales`
+- `contact[dynamic_attributes][Employee ID]=EMP-12345`
+
+<Note>
+The SDK automatically handles URL encoding of field names and values during transmission.
+</Note>
+
+## Use Cases
+
+<Accordion title="E-commerce Integration">
+```csharp
+Contact customer = new Contact();
+customer.Email = "customer@store.com";
+customer.Name = "Sarah Johnson";
+
+// Add e-commerce specific fields
+customer.DynamicValues.Add(new KeyValuePair<string, string>("Customer Since", "2023-05-10"));
+customer.DynamicValues.Add(new KeyValuePair<string, string>("Lifetime Value", "$2,450.00"));
+customer.DynamicValues.Add(new KeyValuePair<string, string>("Order Count", "15"));
+customer.DynamicValues.Add(new KeyValuePair<string, string>("Favorite Category", "Electronics"));
+customer.DynamicValues.Add(new KeyValuePair<string, string>("VIP Status", "Gold"));
+
+customer.save();
+```
+</Accordion>
+
+<Accordion title="Event Registration">
+```csharp
+Contact attendee = new Contact();
+attendee.Email = "attendee@conference.com";
+attendee.Name = "Michael Brown";
+
+// Add event-specific fields
+attendee.DynamicValues.Add(new KeyValuePair<string, string>("Event Name", "Tech Summit 2024"));
+attendee.DynamicValues.Add(new KeyValuePair<string, string>("Ticket Type", "VIP Pass"));
+attendee.DynamicValues.Add(new KeyValuePair<string, string>("Registration Date", "2024-02-15"));
+attendee.DynamicValues.Add(new KeyValuePair<string, string>("Dietary Restrictions", "Vegetarian"));
+attendee.DynamicValues.Add(new KeyValuePair<string, string>("T-Shirt Size", "Large"));
+
+attendee.save();
+```
+</Accordion>
+
+<Accordion title="Lead Qualification">
+```csharp
+Contact lead = new Contact();
+lead.Email = "lead@prospect.com";
+lead.Name = "David Wilson";
+lead.Company = "Wilson Industries";
+
+// Add lead scoring fields
+lead.DynamicValues.Add(new KeyValuePair<string, string>("Lead Score", "85"));
+lead.DynamicValues.Add(new KeyValuePair<string, string>("Lead Source", "LinkedIn"));
+lead.DynamicValues.Add(new KeyValuePair<string, string>("Industry", "Manufacturing"));
+lead.DynamicValues.Add(new KeyValuePair<string, string>("Company Size", "500-1000"));
+lead.DynamicValues.Add(new KeyValuePair<string, string>("Budget", "$50K-$100K"));
+lead.DynamicValues.Add(new KeyValuePair<string, string>("Decision Timeline", "Q2 2024"));
+
+lead.save();
+```
+</Accordion>
+
+## Limitations and Considerations
+
+<CardGroup cols={2}>
+  <Card title="String Values Only" icon="text">
+    All dynamic field values must be strings. Convert numbers, dates, and booleans to string format before adding them.
+  </Card>
+  
+  <Card title="Field Name Length" icon="ruler">
+    While not enforced by the SDK, API providers may have limits on field name length. Use concise, descriptive names.
+  </Card>
+  
+  <Card title="Special Characters" icon="exclamation-triangle">
+    Field names with special characters are automatically URL-encoded. Use alphanumeric characters and spaces for best compatibility.
+  </Card>
+  
+  <Card title="No Retrieval in Lists" icon="list">
+    The SDK doesn't automatically populate DynamicValues when retrieving contacts with `findAll()` or find methods. Check API documentation for retrieval details.
+  </Card>
+</CardGroup>
+
+## Best Practices
+
+### 1. Use Consistent Naming
+
+Establish a naming convention for custom fields:
+
+```csharp
+// Good: Consistent, readable names
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Custom Field 1", "Value"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Custom Field 2", "Value"));
+
+// Avoid: Inconsistent naming
+contact.DynamicValues.Add(new KeyValuePair<string, string>("customField1", "Value"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("CUSTOM_FIELD_2", "Value"));
+```
+
+### 2. Validate Values
+
+```csharp
+public bool AddDynamicFieldSafe(Contact contact, string key, string value)
+{
+    if (string.IsNullOrWhiteSpace(key))
+    {
+        Console.WriteLine("Field name cannot be empty");
+        return false;
+    }
+    
+    if (value == null)
+    {
+        value = string.Empty; // Convert null to empty string
+    }
+    
+    contact.DynamicValues.Add(new KeyValuePair<string, string>(key, value));
+    return true;
+}
+```
+
+### 3. Document Custom Fields
+
+Maintain documentation of all custom fields used in your application:
+
+```csharp
+/// <summary>
+/// Standard custom fields used in the application
+/// </summary>
+public static class CustomFields
+{
+    public const string Department = "Department";
+    public const string EmployeeId = "Employee ID";
+    public const string StartDate = "Start Date";
+    public const string MembershipLevel = "Membership Level";
+}
+
+// Usage
+contact.DynamicValues.Add(new KeyValuePair<string, string>(
+    CustomFields.Department, 
+    "Engineering"
+));
+```
+
+### 4. Type Safety Helper
+
+Create strongly-typed helpers for common conversions:
+
+```csharp
+public static class DynamicFieldHelpers
+{
+    public static void AddDateField(Contact contact, string fieldName, DateTime date)
+    {
+        contact.DynamicValues.Add(new KeyValuePair<string, string>(
+            fieldName, 
+            date.ToString("yyyy-MM-dd")
+        ));
+    }
+    
+    public static void AddNumericField(Contact contact, string fieldName, decimal value)
+    {
+        contact.DynamicValues.Add(new KeyValuePair<string, string>(
+            fieldName, 
+            value.ToString("F2")
+        ));
+    }
+    
+    public static void AddBooleanField(Contact contact, string fieldName, bool value)
+    {
+        contact.DynamicValues.Add(new KeyValuePair<string, string>(
+            fieldName, 
+            value.ToString()
+        ));
+    }
+}
+
+// Usage
+DynamicFieldHelpers.AddDateField(contact, "Last Login", DateTime.Now);
+DynamicFieldHelpers.AddNumericField(contact, "Account Balance", 1250.50m);
+DynamicFieldHelpers.AddBooleanField(contact, "Newsletter Subscribed", true);
+```
+
+## Related Resources
+
+<Card title="Contact Management" icon="user" href="/api/contact">
+  Learn more about working with contacts in the API reference
+</Card>

@@ -1,0 +1,466 @@
+---
+title: Template
+description: Create and manage reusable email templates in your Mailee.me account
+---
+
+## Overview
+
+The `Template` class represents a reusable email template in Mailee.me. Templates allow you to create consistent, branded email designs with editable regions and repeatable sections for dynamic content.
+
+## Properties
+
+### Basic Information
+
+<ResponseField name="Id" type="int">
+  Unique identifier for the template
+</ResponseField>
+
+<ResponseField name="Title" type="string">
+  Name of the template
+</ResponseField>
+
+<ResponseField name="Html" type="string">
+  HTML content of the template, including markup for editable regions and repeatable sections
+</ResponseField>
+
+### System Fields
+
+<ResponseField name="ClientId" type="int">
+  Your account ID in Mailee.me
+</ResponseField>
+
+<ResponseField name="CreatedAt" type="DateTime?">
+  When the template was created
+</ResponseField>
+
+<ResponseField name="UpdatedAt" type="DateTime?">
+  When the template was last updated
+</ResponseField>
+
+<ResponseField name="DeletedAt" type="DateTime?">
+  When the template was deleted (soft delete)
+</ResponseField>
+
+### Additional Properties
+
+<ResponseField name="Simulations" type="string">
+  Template simulation data for preview purposes
+</ResponseField>
+
+### Thumbnail
+
+<ResponseField name="ThumbFileName" type="string">
+  Thumbnail preview filename
+</ResponseField>
+
+<ResponseField name="ThumbContentType" type="string">
+  MIME type of the thumbnail (e.g., "image/png")
+</ResponseField>
+
+<ResponseField name="ThumbFileSize" type="int">
+  Size of the thumbnail file in bytes
+</ResponseField>
+
+<ResponseField name="ThumbUpdatedAt" type="DateTime?">
+  When the thumbnail was last updated
+</ResponseField>
+
+## Constructors
+
+### Template()
+
+Creates a new empty template instance.
+
+```csharp
+Mailee.Template template = new Mailee.Template();
+```
+
+### Template(string title, string html)
+
+Creates a new template with title and HTML content.
+
+<ParamField path="title" type="string" required>
+  Template title
+</ParamField>
+
+<ParamField path="html" type="string" required>
+  HTML content for the template
+</ParamField>
+
+**Example:**
+```csharp
+Mailee.Template template = new Mailee.Template(
+    "Welcome Email",
+    "<html><body><h1>Welcome!</h1></body></html>"
+);
+```
+
+## Methods
+
+### Static Methods
+
+#### findAll()
+
+Retrieves all templates from your account.
+
+```csharp
+public static List<Mailee.Template> findAll()
+```
+
+**Returns:** `List<Mailee.Template>` - Collection of all templates
+
+**Example:**
+```csharp
+List<Mailee.Template> templates = Mailee.Template.findAll();
+foreach (var template in templates)
+{
+    Console.WriteLine($"Template: {template.Title} (ID: {template.Id})");
+}
+```
+
+---
+
+#### findById(int id)
+
+Retrieves a specific template by its ID.
+
+```csharp
+public static Mailee.Template findById(int id)
+```
+
+<ParamField path="id" type="int" required>
+  The template ID
+</ParamField>
+
+**Returns:** `Mailee.Template` - The template object, or empty template if not found
+
+**Example:**
+```csharp
+Mailee.Template template = Mailee.Template.findById(1);
+Console.WriteLine($"Template Title: {template.Title}");
+Console.WriteLine($"HTML Length: {template.Html.Length} characters");
+```
+
+### Instance Methods
+
+#### save()
+
+Creates a new template or updates an existing one. If `Id` is 0, creates a new template. Otherwise, updates the existing template.
+
+```csharp
+public string save()
+```
+
+**Returns:** `string` - XML response from the API
+
+**Example - Create:**
+```csharp
+// Create Template
+Mailee.Template template = new Mailee.Template();
+template.Title = "Título do Template";
+template.Html = "<html><body>Hello World!</body></html>";
+
+// Save
+template.save();
+```
+
+**Example - Update:**
+```csharp
+// Find Template
+Mailee.Template template = Mailee.Template.findById(1);
+
+// Update Fields
+template.Title = "Updated Template Title";
+template.Html = "<html><body><h1>Updated Content</h1></body></html>";
+
+// Save
+template.save();
+```
+
+## Usage Examples
+
+### Create a Simple Template
+
+```csharp
+using System;
+using Mailee;
+
+try
+{
+    // Create a new template
+    Mailee.Template template = new Mailee.Template();
+    template.Title = "Newsletter Template";
+    template.Html = @"
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                .header { background-color: #007bff; color: white; padding: 20px; }
+                .content { padding: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class='header'>
+                <h1>Company Newsletter</h1>
+            </div>
+            <div class='content'>
+                <p>Welcome to our newsletter!</p>
+            </div>
+        </body>
+        </html>
+    ";
+    
+    // Save the template
+    template.save();
+    Console.WriteLine($"Template created with ID: {template.Id}");
+}
+catch (Mailee.RestException ex)
+{
+    Console.WriteLine("API Error:");
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+```
+
+### Update an Existing Template
+
+```csharp
+try
+{
+    // Find the template
+    Mailee.Template template = Mailee.Template.findById(1);
+    
+    // Update the HTML content
+    template.Html = @"
+        <html>
+        <body>
+            <h1>Updated Header</h1>
+            <p>New content goes here...</p>
+        </body>
+        </html>
+    ";
+    
+    // Save changes
+    template.save();
+    Console.WriteLine("Template updated successfully");
+}
+catch (Mailee.RestException ex)
+{
+    Console.WriteLine($"Error: {ex.StatusCode} - {ex.StatusDescription}");
+}
+```
+
+### List All Templates
+
+```csharp
+try
+{
+    // Retrieve all templates
+    List<Mailee.Template> templates = Mailee.Template.findAll();
+    
+    Console.WriteLine($"Total templates: {templates.Count}\n");
+    
+    foreach (var template in templates)
+    {
+        Console.WriteLine($"ID: {template.Id}");
+        Console.WriteLine($"Title: {template.Title}");
+        Console.WriteLine($"Created: {template.CreatedAt}");
+        Console.WriteLine($"Updated: {template.UpdatedAt}");
+        Console.WriteLine($"HTML Size: {template.Html.Length} chars");
+        Console.WriteLine("---");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error: {ex.Message}");
+}
+```
+
+### Create Template with Editable Regions
+
+Mailee.me templates support special markup for editable regions that can be populated when creating messages:
+
+```csharp
+try
+{
+    Mailee.Template template = new Mailee.Template();
+    template.Title = "Dynamic Content Template";
+    template.Html = @"
+        <html>
+        <body>
+            <div class='header'>
+                <!-- Editable region 1 -->
+                <div data-editable='1'>
+                    <h1>Default Header</h1>
+                </div>
+            </div>
+            <div class='content'>
+                <!-- Editable region 2 -->
+                <div data-editable='2'>
+                    <p>Default content here...</p>
+                </div>
+            </div>
+            <div class='footer'>
+                <!-- Repeatable section -->
+                <div data-repeat='1'>
+                    <p>Repeatable item</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    ";
+    
+    template.save();
+    Console.WriteLine("Template with editable regions created");
+}
+catch (Mailee.RestException ex)
+{
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine(error);
+    }
+}
+```
+
+## Complete Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using Mailee;
+
+class TemplateManager
+{
+    static void Main()
+    {
+        try
+        {
+            // Create a new template
+            Mailee.Template template = new Mailee.Template();
+            template.Title = "Monthly Newsletter";
+            template.Html = @"
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'>
+                    <style>
+                        body {
+                            font-family: 'Helvetica Neue', Arial, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                        }
+                        .container {
+                            max-width: 600px;
+                            margin: 0 auto;
+                        }
+                        .header {
+                            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                            color: white;
+                            padding: 30px;
+                            text-align: center;
+                        }
+                        .content {
+                            padding: 30px;
+                            background: #f9f9f9;
+                        }
+                        .footer {
+                            background: #333;
+                            color: white;
+                            padding: 20px;
+                            text-align: center;
+                            font-size: 12px;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <div class='header'>
+                            <h1>Your Company Newsletter</h1>
+                        </div>
+                        <div class='content' data-editable='1'>
+                            <h2>This Month's Highlights</h2>
+                            <p>Default content goes here...</p>
+                        </div>
+                        <div class='footer'>
+                            <p>&copy; 2024 Your Company. All rights reserved.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            ";
+            
+            // Save the template
+            template.save();
+            Console.WriteLine($"✓ Template '{template.Title}' created successfully");
+            Console.WriteLine($"  Template ID: {template.Id}");
+            
+            // List all templates
+            List<Mailee.Template> allTemplates = Mailee.Template.findAll();
+            Console.WriteLine($"\n✓ Total templates in account: {allTemplates.Count}");
+            
+            // Update the template
+            template.Title = "Monthly Newsletter - Updated";
+            template.save();
+            Console.WriteLine($"\n✓ Template updated successfully");
+            
+        }
+        catch (Mailee.RestException ex)
+        {
+            Console.WriteLine("\n✗ API Error:");
+            foreach (string error in ex.ErrorMessages)
+            {
+                Console.WriteLine($"  - {error}");
+            }
+            Console.WriteLine($"\n  Status: {ex.StatusCode} - {ex.StatusDescription}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n✗ Error: {ex.Message}");
+        }
+    }
+}
+```
+
+## Error Handling
+
+All methods may throw `Mailee.RestException` on API errors:
+
+```csharp
+try
+{
+    Mailee.Template template = new Mailee.Template();
+    template.Title = "Test Template";
+    template.Html = "<html><body>Test</body></html>";
+    template.save();
+}
+catch (Mailee.RestException ex)
+{
+    // Show detailed error messages
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine(error);
+    }
+    Console.WriteLine($"Status Code: {ex.StatusCode}");
+    Console.WriteLine($"Status Description: {ex.StatusDescription}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"General error: {ex.Message}");
+}
+```
+
+## Best Practices
+
+1. **Use semantic HTML**: Structure your templates with proper HTML5 elements
+2. **Inline CSS**: Email clients often strip out `<style>` tags, so use inline styles for critical formatting
+3. **Test thoroughly**: Preview templates across different email clients before sending
+4. **Keep it simple**: Avoid complex layouts that may not render well in all email clients
+5. **Use editable regions**: Define clear editable regions for dynamic content
+6. **Mobile responsive**: Design templates that work well on mobile devices
+
+## Related Resources
+
+- [Message](/api/message) - Use templates to create messages
+- [Configuration](/configuration) - API setup guide

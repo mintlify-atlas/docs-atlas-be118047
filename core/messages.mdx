@@ -1,0 +1,317 @@
+---
+title: 'Messages'
+description: 'Learn how to create and send email campaigns using the Mailee.me .NET SDK'
+---
+
+Messages represent email campaigns that you send to your contacts. You can create messages using custom HTML, templates, or send to specific email addresses, lists, or segments.
+
+## When to Use Messages
+
+Use the Message class when you need to:
+
+- Send email campaigns to your contacts
+- Create newsletters using custom HTML or templates
+- Send targeted campaigns to specific lists or segments
+- Track campaign performance with Google Analytics integration
+- Send test messages to specific email addresses
+
+## Creating a Message with HTML
+
+Create a message with custom HTML content:
+
+```csharp
+// Create Message
+Mailee.Message message = new Mailee.Message();
+message.Title = "Título da Mensagem";
+message.Subject = "Assunto da Mensagem";
+message.FromName = "Nome do Destinatário";
+message.FromEmail = "Email do Destinatário";
+message.ReplyEmail = "Email para Resposta";
+message.Html = "<html><body>Hello World!</body></html>";
+message.Analytics = true;
+message.Emails = "email_teste_1@site.com, email_teste_2@site.com, email_teste_3@site.com";
+
+// Save
+message.save();
+```
+
+<Info>The `Analytics` property enables Google Analytics tracking for your campaign.</Info>
+
+## Creating a Message with a Template
+
+Use an existing template instead of raw HTML:
+
+```csharp
+// Create Message
+Mailee.Message message = new Mailee.Message();
+message.Title = "Título da Mensagem";
+message.Subject = "Assunto da Mensagem";
+message.FromName = "Nome do Destinatário";
+message.FromEmail = "Email do Destinatário";
+message.ReplyEmail = "Email para Resposta";
+message.TemplateId = 1;
+message.Analytics = true;
+message.Emails = "email_teste_1@site.com, email_teste_2@site.com, email_teste_3@site.com";
+
+// Save
+message.save();
+```
+
+<Tip>Using templates makes it easier to maintain consistent branding across your campaigns. Learn more on the [Templates](/core/templates) page.</Tip>
+
+## Sending to Lists and Segments
+
+Send a message to an entire list or a specific segment:
+
+```csharp
+// Create Message
+Mailee.Message message = new Mailee.Message();
+message.Title = "Título da Mensagem";
+message.Subject = "Assunto da Mensagem";
+message.FromName = "Nome do Destinatário";
+message.FromEmail = "Email do Destinatário";
+message.ReplyEmail = "Email para Resposta";
+message.Html = "<html><body>Hello World!</body></html>";
+message.TemplateId = 1;
+message.Analytics = true;
+message.ListId = 1;
+message.SegmentId = 1;
+
+// Save
+message.save();
+```
+
+<Note>When using both `ListId` and `SegmentId`, the message is sent only to contacts in the specified segment within that list.</Note>
+
+## Updating a Message
+
+Retrieve and update an existing message:
+
+```csharp
+// Find Message
+Mailee.Message message = Mailee.Message.findById(1);
+
+// Update Fields
+message.Title = "Título da Mensagem";
+message.Subject = "Assunto da Mensagem";
+message.FromName = "Nome do Destinatário";
+message.FromEmail = "Email do Destinatário";
+message.ReplyEmail = "Email para Resposta";
+message.Html = "<html><body>Hello World!</body></html>";
+message.TemplateId = 1;
+message.Analytics = true;
+message.Emails = "email_teste_1@site.com, email_teste_2@site.com, email_teste_3@site.com";
+
+// Save
+message.save();
+```
+
+## Retrieving Messages
+
+<AccordionGroup>
+  <Accordion title="Find All Messages">
+    Retrieve all messages from your account:
+
+    ```csharp
+    // Find All Messages
+    List<Mailee.Message> messages = Mailee.Message.findAll();
+    ```
+
+    This returns a collection of all your messages with their properties and status.
+  </Accordion>
+
+  <Accordion title="Find Message by ID">
+    Retrieve a specific message using its ID:
+
+    ```csharp
+    // Find Message by Id
+    Mailee.Message message = Mailee.Message.findById(1);
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Message Properties
+
+The Message class includes comprehensive properties for campaign management:
+
+### Required Properties
+
+- **Title** - Internal title for the message (not visible to recipients)
+- **Subject** - Email subject line
+- **FromName** - Sender's display name
+- **FromEmail** - Sender's email address
+
+### Content Properties
+
+- **Html** - Custom HTML content
+- **TemplateId** - ID of template to use
+- **Edit** - Content for editable regions in template
+- **Repeats** - Content for repeatable regions in template
+- **Text** - Plain text version
+
+### Recipient Properties
+
+- **Emails** - Comma-separated list of email addresses
+- **ListId** - Target a specific list
+- **SegmentId** - Target a specific segment within a list
+
+### Configuration Properties
+
+- **ReplyEmail** - Email address for replies
+- **Analytics** - Enable Google Analytics tracking (boolean)
+- **SendAfter** - Schedule message for later delivery
+- **SendWhen** - Delivery schedule configuration
+
+### Read-Only Properties
+
+- **Id** - Mailee.me message ID
+- **Status** - Current message status
+- **Total** - Number of recipients
+- **CreatedAt** - Timestamp when created
+- **ClientId** - Your Mailee.me client ID
+
+## Working with Templates
+
+When using templates, you can populate editable and repeatable regions:
+
+```csharp
+Mailee.Message message = new Mailee.Message();
+message.Title = "Monthly Newsletter";
+message.Subject = "Your Monthly Update";
+message.FromName = "Company Name";
+message.FromEmail = "news@company.com";
+message.TemplateId = 1;
+
+// Populate editable regions
+message.Edit.Add(new KeyValuePair<int, string>(1, "<h1>Welcome!</h1>"));
+message.Edit.Add(new KeyValuePair<int, string>(2, "<p>This month's highlights...</p>"));
+
+// Add repeatable content
+message.Repeats.Add(new KeyValuePair<int, string>(1, "<div>Item 1</div>"));
+message.Repeats.Add(new KeyValuePair<int, string>(2, "<div>Item 2</div>"));
+
+message.ListId = 1;
+message.save();
+```
+
+<Info>The `Edit` and `Repeats` properties allow dynamic content insertion into predefined template regions.</Info>
+
+## Campaign Strategies
+
+<Steps>
+  <Step title="Test with email addresses first">
+    Before sending to a list, test your message with specific email addresses:
+    ```csharp
+    message.Emails = "test@yourcompany.com";
+    message.save();
+    ```
+  </Step>
+
+  <Step title="Use meaningful titles and subjects">
+    Create clear, descriptive titles for internal tracking and compelling subject lines for recipients:
+    ```csharp
+    message.Title = "2024 Q1 Newsletter - Tech Segment";
+    message.Subject = "Exciting Updates Just for You!";
+    ```
+  </Step>
+
+  <Step title="Enable analytics tracking">
+    Always enable analytics to measure campaign performance:
+    ```csharp
+    message.Analytics = true;
+    ```
+  </Step>
+
+  <Step title="Set reply-to address">
+    Provide a monitored reply address for recipient responses:
+    ```csharp
+    message.ReplyEmail = "support@yourcompany.com";
+    ```
+  </Step>
+</Steps>
+
+## Best Practices
+
+<Warning>**Always test your HTML:** Send test messages to multiple email clients before sending to your full list to ensure proper rendering.</Warning>
+
+<Tip>Use templates for consistent branding and faster message creation. Templates can be reused across multiple campaigns.</Tip>
+
+### Error Handling
+
+Always wrap message operations in error handling:
+
+```csharp
+try
+{
+    Mailee.Message message = new Mailee.Message();
+    message.Title = "Campaign Title";
+    message.Subject = "Email Subject";
+    message.FromName = "Your Company";
+    message.FromEmail = "noreply@yourcompany.com";
+    message.Html = "<html><body>Content</body></html>";
+    message.ListId = 1;
+    message.save();
+}
+catch (Mailee.RestExcepction ex)
+{
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine(error);
+    }
+    Console.WriteLine($"Status: {ex.StatusCode} - {ex.StatusDesciption}");
+}
+```
+
+## Scheduling Messages
+
+Schedule messages for future delivery:
+
+```csharp
+Mailee.Message message = new Mailee.Message();
+message.Title = "Scheduled Campaign";
+message.Subject = "Your Weekly Update";
+message.FromName = "Company Name";
+message.FromEmail = "news@company.com";
+message.Html = "<html><body>Content</body></html>";
+message.ListId = 1;
+message.SendAfter = DateTime.Now.AddDays(7); // Send in 7 days
+message.save();
+```
+
+<Note>The `SendAfter` property allows you to prepare campaigns in advance and schedule them for optimal delivery times.</Note>
+
+## Tracking Performance
+
+After sending a message, track its performance using reports:
+
+```csharp
+int messageId = 123;
+Mailee.Report report = Mailee.Report.findByMessage(messageId);
+
+Console.WriteLine($"Total Sent: {report.ResultsTotal}");
+Console.WriteLine($"Opens: {report.ResultsOpens}");
+Console.WriteLine($"Returns: {report.ResultsReturns}");
+Console.WriteLine($"Not Opened: {report.ResultsNotOpened}");
+```
+
+Learn more on the [Reports](/core/reports) page.
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Templates" icon="palette" href="/core/templates">
+    Create reusable email templates
+  </Card>
+  
+  <Card title="Lists" icon="list" href="/core/lists">
+    Organize your contact lists
+  </Card>
+  
+  <Card title="Reports" icon="chart-line" href="/core/reports">
+    Track campaign performance
+  </Card>
+  
+  <Card title="Contacts" icon="user" href="/core/contacts">
+    Manage your contact database
+  </Card>
+</CardGroup>

@@ -1,0 +1,656 @@
+---
+title: 'Best Practices'
+description: 'Performance optimization, security, and best practices for the Mailee.me .NET SDK'
+---
+
+## Overview
+
+This guide covers best practices for using the Mailee.me .NET SDK in production applications, including performance optimization, security considerations, rate limiting, and testing strategies.
+
+## Security Considerations
+
+### API Key Storage
+
+The SDK reads API credentials from Web.Config/App.Config. Never hardcode credentials in your source code or commit them to version control.
+
+#### Recommended Configuration
+
+```xml
+<configuration>
+  <appSettings>
+    <!-- Mailee - SecretKey -->
+    <add key="MaileeKey" value="cb3n376h66a1r"/>
+    <!-- Mailee - Subdomain -->
+    <add key="MaileeSubdomain" value="yoursubdomain"/>
+  </appSettings>
+</configuration>
+```
+
+<Warning>
+Never commit Web.config or App.config files containing real API credentials to version control. Use environment-specific configuration files.
+</Warning>
+
+#### Using Environment Variables
+
+For additional security, read credentials from environment variables:
+
+```csharp
+public static class SecureConfig
+{
+    public static void SetMaileeCredentials()
+    {
+        string maileeKey = Environment.GetEnvironmentVariable("MAILEE_KEY");
+        string maileeSubdomain = Environment.GetEnvironmentVariable("MAILEE_SUBDOMAIN");
+        
+        if (string.IsNullOrEmpty(maileeKey) || string.IsNullOrEmpty(maileeSubdomain))
+        {
+            throw new InvalidOperationException(
+                "Mailee credentials not found in environment variables"
+            );
+        }
+        
+        // Update configuration at runtime
+        ConfigurationManager.AppSettings["MaileeKey"] = maileeKey;
+        ConfigurationManager.AppSettings["MaileeSubdomain"] = maileeSubdomain;
+    }
+}
+```
+
+#### Azure Key Vault Integration
+
+For Azure deployments, use Key Vault:
+
+```csharp
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
+
+public static class AzureKeyVaultConfig
+{
+    public static void LoadMaileeCredentials(string keyVaultUrl)
+    {
+        var client = new SecretClient(
+            new Uri(keyVaultUrl), 
+            new DefaultAzureCredential()
+        );
+        
+        KeyVaultSecret maileeKey = client.GetSecret("MaileeKey");
+        KeyVaultSecret maileeSubdomain = client.GetSecret("MaileeSubdomain");
+        
+        ConfigurationManager.AppSettings["MaileeKey"] = maileeKey.Value;
+        ConfigurationManager.AppSettings["MaileeSubdomain"] = maileeSubdomain.Value;
+    }
+}
+```
+
+### Data Sanitization
+
+Always validate and sanitize data before sending to the API:
+
+```csharp
+public static class ContactValidator
+{
+    public static bool ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return false;
+            
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    public static string SanitizeInput(string input, int maxLength = 255)
+    {
+        if (string.IsNullOrEmpty(input))
+            return string.Empty;
+            
+        // Remove control characters
+        input = new string(input.Where(c => !char.IsControl(c)).ToArray());
+        
+        // Trim whitespace
+        input = input.Trim();
+        
+        // Enforce max length
+        if (input.Length > maxLength)
+            input = input.Substring(0, maxLength);
+            
+        return input;
+    }
+}
+```
+
+### HTTPS Communication
+
+The SDK uses HTTP by default (from Config.cs:33). For production, ensure HTTPS is used:
+
+<Warning>
+The SDK's default configuration uses HTTP. Consider wrapping or modifying the SDK to enforce HTTPS for production environments.
+</Warning>
+
+```csharp
+// Note: The SDK constructs URLs using http://
+// http://api.{secretKey}.{subdomain}.mailee.me/
+// Verify with your Mailee.me provider that HTTPS is supported
+```
+
+## Performance Optimization
+
+### Batch Operations
+
+When working with multiple contacts, batch operations efficiently:
+
+```csharp
+public class ContactBatchProcessor
+{
+    private readonly int _batchSize;
+    private readonly int _delayBetweenBatches;
+    
+    public ContactBatchProcessor(int batchSize = 50, int delayMs = 1000)
+    {
+        _batchSize = batchSize;
+        _delayBetweenBatches = delayMs;
+    }
+    
+    public void ProcessContacts(List<Contact> contacts)
+    {
+        var batches = contacts
+            .Select((contact, index) => new { contact, index })
+            .GroupBy(x => x.index / _batchSize)
+            .Select(g => g.Select(x => x.contact).ToList());
+            
+        foreach (var batch in batches)
+        {
+            ProcessBatch(batch);
+            
+            // Delay between batches to avoid rate limits
+            System.Threading.Thread.Sleep(_delayBetweenBatches);
+        }
+    }
+    
+    private void ProcessBatch(List<Contact> batch)
+    {
+        foreach (var contact in batch)
+        {
+            try
+            {
+                contact.save();
+            }
+            catch (Mailee.RestExcepction ex)
+            {
+                // Log error and continue with next contact
+                Console.WriteLine($"Failed to save {contact.Email}: {ex.StatusCode}");
+            }
+        }
+    }
+}
+```
+
+### Caching Strategies
+
+Implement caching to reduce API calls:
+
+```csharp
+using System.Runtime.Caching;
+
+public class ContactCache
+{
+    private static MemoryCache _cache = MemoryCache.Default;
+    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(10);
+    
+    public static Contact GetOrFetch(int contactId)
+    {
+        string cacheKey = $"contact_{contactId}";
+        
+        if (_cache.Contains(cacheKey))
+        {
+            return (Contact)_cache.Get(cacheKey);
+        }
+        
+        Contact contact = Contact.findById(contactId);
+        
+        if (contact != null && contact.Id > 0)
+        {
+            _cache.Add(cacheKey, contact, DateTimeOffset.Now.Add(CacheDuration));
+        }
+        
+        return contact;
+    }
+    
+    public static void Invalidate(int contactId)
+    {
+        string cacheKey = $"contact_{contactId}";
+        _cache.Remove(cacheKey);
+    }
+    
+    public static void Clear()
+    {
+        var keys = _cache.Select(kvp => kvp.Key).ToList();
+        foreach (var key in keys)
+        {
+            _cache.Remove(key);
+        }
+    }
+}
+
+// Usage
+Contact contact = ContactCache.GetOrFetch(123);
+
+// After updating, invalidate cache
+contact.Email = "newemail@example.com";
+contact.save();
+ContactCache.Invalidate(contact.Id);
+```
+
+### Asynchronous Operations
+
+The SDK uses synchronous operations. Wrap them for async support:
+
+```csharp
+public class AsyncContactService
+{
+    public async Task<Contact> FindByIdAsync(int contactId)
+    {
+        return await Task.Run(() => Contact.findById(contactId));
+    }
+    
+    public async Task<string> SaveAsync(Contact contact)
+    {
+        return await Task.Run(() => contact.save());
+    }
+    
+    public async Task<List<Contact>> FindAllAsync()
+    {
+        return await Task.Run(() => Contact.findAll());
+    }
+}
+
+// Usage in async context
+public async Task ProcessContactsAsync()
+{
+    var service = new AsyncContactService();
+    
+    var contact = await service.FindByIdAsync(123);
+    contact.Name = "Updated Name";
+    await service.SaveAsync(contact);
+}
+```
+
+## Rate Limiting and Throttling
+
+### Implementing Rate Limiter
+
+```csharp
+public class RateLimiter
+{
+    private readonly int _maxRequestsPerSecond;
+    private readonly Queue<DateTime> _requestTimestamps;
+    private readonly object _lock = new object();
+    
+    public RateLimiter(int maxRequestsPerSecond = 10)
+    {
+        _maxRequestsPerSecond = maxRequestsPerSecond;
+        _requestTimestamps = new Queue<DateTime>();
+    }
+    
+    public void WaitForSlot()
+    {
+        lock (_lock)
+        {
+            DateTime now = DateTime.UtcNow;
+            DateTime oneSecondAgo = now.AddSeconds(-1);
+            
+            // Remove timestamps older than 1 second
+            while (_requestTimestamps.Count > 0 && 
+                   _requestTimestamps.Peek() < oneSecondAgo)
+            {
+                _requestTimestamps.Dequeue();
+            }
+            
+            // Wait if limit reached
+            if (_requestTimestamps.Count >= _maxRequestsPerSecond)
+            {
+                DateTime oldestTimestamp = _requestTimestamps.Peek();
+                TimeSpan waitTime = oldestTimestamp.AddSeconds(1) - now;
+                
+                if (waitTime > TimeSpan.Zero)
+                {
+                    System.Threading.Thread.Sleep(waitTime);
+                }
+                
+                // Recurse to recheck
+                WaitForSlot();
+                return;
+            }
+            
+            // Add current request
+            _requestTimestamps.Enqueue(now);
+        }
+    }
+}
+
+// Usage
+public class ThrottledContactService
+{
+    private static readonly RateLimiter _rateLimiter = new RateLimiter(10);
+    
+    public Contact GetContact(int id)
+    {
+        _rateLimiter.WaitForSlot();
+        return Contact.findById(id);
+    }
+    
+    public void SaveContact(Contact contact)
+    {
+        _rateLimiter.WaitForSlot();
+        contact.save();
+    }
+}
+```
+
+### Exponential Backoff
+
+```csharp
+public class ExponentialBackoff
+{
+    public static T Execute<T>(
+        Func<T> operation, 
+        int maxRetries = 5,
+        int initialDelayMs = 1000,
+        double multiplier = 2.0)
+    {
+        int retryCount = 0;
+        int currentDelay = initialDelayMs;
+        
+        while (true)
+        {
+            try
+            {
+                return operation();
+            }
+            catch (Mailee.RestExcepction ex)
+            {
+                retryCount++;
+                
+                // Don't retry client errors (4xx)
+                if (ex.StatusCode >= 400 && ex.StatusCode < 500)
+                {
+                    throw;
+                }
+                
+                // Throw if max retries reached
+                if (retryCount >= maxRetries)
+                {
+                    throw;
+                }
+                
+                // Wait with exponential backoff
+                Console.WriteLine(
+                    $"Retry {retryCount}/{maxRetries} after {currentDelay}ms delay"
+                );
+                System.Threading.Thread.Sleep(currentDelay);
+                
+                // Increase delay for next retry
+                currentDelay = (int)(currentDelay * multiplier);
+            }
+        }
+    }
+}
+
+// Usage
+Contact contact = ExponentialBackoff.Execute(() => Contact.findById(123));
+```
+
+## Connection Management
+
+### HttpWebRequest Best Practices
+
+The SDK uses HttpWebRequest (from Rest.cs). Optimize its usage:
+
+```csharp
+// The SDK doesn't expose connection settings, but you can configure
+// ServicePointManager globally for your application:
+
+public static class ConnectionConfig
+{
+    public static void Configure()
+    {
+        // Increase default connection limit
+        System.Net.ServicePointManager.DefaultConnectionLimit = 100;
+        
+        // Enable TLS 1.2 and 1.3
+        System.Net.ServicePointManager.SecurityProtocol = 
+            SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+            
+        // Connection timeout
+        System.Net.ServicePointManager.MaxServicePointIdleTime = 30000;
+        
+        // Keep-alive settings
+        System.Net.ServicePointManager.SetTcpKeepAlive(true, 60000, 1000);
+    }
+}
+
+// Call this at application startup
+ConnectionConfig.Configure();
+```
+
+## Testing Strategies
+
+### Unit Testing with Mocks
+
+```csharp
+using Moq;
+using Xunit;
+
+public interface IContactService
+{
+    Contact GetContact(int id);
+    void SaveContact(Contact contact);
+}
+
+public class ContactService : IContactService
+{
+    public Contact GetContact(int id)
+    {
+        return Contact.findById(id);
+    }
+    
+    public void SaveContact(Contact contact)
+    {
+        contact.save();
+    }
+}
+
+public class ContactServiceTests
+{
+    [Fact]
+    public void SaveContact_ValidContact_Succeeds()
+    {
+        // Arrange
+        var mockService = new Mock<IContactService>();
+        var contact = new Contact 
+        { 
+            Email = "test@example.com", 
+            Name = "Test User" 
+        };
+        
+        mockService.Setup(s => s.SaveContact(It.IsAny<Contact>()))
+                   .Verifiable();
+        
+        // Act
+        mockService.Object.SaveContact(contact);
+        
+        // Assert
+        mockService.Verify(s => s.SaveContact(contact), Times.Once);
+    }
+}
+```
+
+### Integration Testing
+
+```csharp
+using Xunit;
+
+public class ContactIntegrationTests : IDisposable
+{
+    private List<int> _createdContactIds = new List<int>();
+    
+    [Fact]
+    public void CreateContact_ValidData_ReturnsContactWithId()
+    {
+        // Arrange
+        var contact = new Contact
+        {
+            Email = $"test+{Guid.NewGuid()}@example.com",
+            Name = "Integration Test Contact"
+        };
+        
+        // Act
+        contact.save();
+        _createdContactIds.Add(contact.Id);
+        
+        // Assert
+        Assert.True(contact.Id > 0);
+    }
+    
+    [Fact]
+    public void FindContact_ExistingId_ReturnsContact()
+    {
+        // Arrange - Create a contact first
+        var newContact = new Contact
+        {
+            Email = $"test+{Guid.NewGuid()}@example.com",
+            Name = "Test Contact"
+        };
+        newContact.save();
+        _createdContactIds.Add(newContact.Id);
+        
+        // Act
+        var foundContact = Contact.findById(newContact.Id);
+        
+        // Assert
+        Assert.NotNull(foundContact);
+        Assert.Equal(newContact.Email, foundContact.Email);
+    }
+    
+    public void Dispose()
+    {
+        // Cleanup: Remove test contacts
+        // Note: The SDK doesn't provide a delete method
+        // You may need to manually clean up test data
+    }
+}
+```
+
+### Test Configuration
+
+Use separate configuration for testing:
+
+```xml
+<!-- App.config for tests -->
+<configuration>
+  <appSettings>
+    <!-- Test environment credentials -->
+    <add key="MaileeKey" value="test_key_here"/>
+    <add key="MaileeSubdomain" value="testsubdomain"/>
+  </appSettings>
+</configuration>
+```
+
+## Logging and Monitoring
+
+### Structured Logging
+
+```csharp
+using Serilog;
+
+public class MaileeLogger
+{
+    private static readonly ILogger _logger = Log.ForContext<MaileeLogger>();
+    
+    public static void LogApiCall(string operation, int? statusCode = null, 
+        long? durationMs = null)
+    {
+        _logger.Information(
+            "Mailee API call: {Operation} | Status: {StatusCode} | Duration: {Duration}ms",
+            operation, statusCode, durationMs
+        );
+    }
+    
+    public static void LogApiError(string operation, Mailee.RestExcepction ex)
+    {
+        _logger.Error(ex,
+            "Mailee API error: {Operation} | Status: {StatusCode} | Errors: {Errors}",
+            operation, ex.StatusCode, string.Join(", ", ex.ErrorMessages)
+        );
+    }
+}
+
+// Usage with timing
+var sw = System.Diagnostics.Stopwatch.StartNew();
+try
+{
+    var contact = Contact.findById(123);
+    sw.Stop();
+    MaileeLogger.LogApiCall("Contact.findById", 200, sw.ElapsedMilliseconds);
+}
+catch (Mailee.RestExcepction ex)
+{
+    sw.Stop();
+    MaileeLogger.LogApiError("Contact.findById", ex);
+    throw;
+}
+```
+
+## Best Practices Summary
+
+<CardGroup cols={2}>
+  <Card title="Secure Configuration" icon="lock">
+    Store API credentials in environment variables or secure vaults, never in source code.
+  </Card>
+  
+  <Card title="Implement Caching" icon="database">
+    Cache frequently accessed data to reduce API calls and improve performance.
+  </Card>
+  
+  <Card title="Rate Limiting" icon="gauge">
+    Implement rate limiting to avoid overwhelming the API and respect usage limits.
+  </Card>
+  
+  <Card title="Error Handling" icon="shield-alert">
+    Use comprehensive error handling with retry logic for transient failures.
+  </Card>
+  
+  <Card title="Async Patterns" icon="clock">
+    Wrap synchronous SDK calls in async methods for better application responsiveness.
+  </Card>
+  
+  <Card title="Logging" icon="file-text">
+    Implement structured logging for all API operations to aid debugging and monitoring.
+  </Card>
+  
+  <Card title="Testing" icon="check-square">
+    Write unit and integration tests with proper test data cleanup.
+  </Card>
+  
+  <Card title="Batch Operations" icon="layers">
+    Process multiple records in batches with delays to optimize performance.
+  </Card>
+</CardGroup>
+
+## Related Resources
+
+<CardGroup cols={2}>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/advanced/error-handling">
+    Learn more about handling errors and exceptions
+  </Card>
+  
+  <Card title="Dynamic Fields" icon="list" href="/advanced/dynamic-fields">
+    Working with custom contact fields
+  </Card>
+</CardGroup>

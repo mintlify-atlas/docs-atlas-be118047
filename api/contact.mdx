@@ -1,0 +1,459 @@
+---
+title: Contact
+description: Manage contacts in your Mailee.me account, including creating, updating, and subscribing contacts to lists
+---
+
+## Overview
+
+The `Contact` class represents a contact in your Mailee.me account. It provides methods to create, retrieve, update, and manage contact subscriptions to mailing lists.
+
+## Properties
+
+### Basic Information
+
+<ResponseField name="Id" type="int">
+  Unique identifier for the contact in Mailee.me
+</ResponseField>
+
+<ResponseField name="Email" type="string">
+  Contact's email address
+</ResponseField>
+
+<ResponseField name="Name" type="string">
+  Contact's full name
+</ResponseField>
+
+<ResponseField name="InternalId" type="int">
+  Custom identifier from your system for tracking purposes
+</ResponseField>
+
+<ResponseField name="Company" type="string">
+  Company name where the contact works
+</ResponseField>
+
+<ResponseField name="Position" type="string">
+  Job position or title
+</ResponseField>
+
+### Personal Information
+
+<ResponseField name="Sex" type="string">
+  Gender (e.g., "M" or "F")
+</ResponseField>
+
+<ResponseField name="Birthday" type="DateTime?">
+  Date of birth
+</ResponseField>
+
+<ResponseField name="Age" type="int">
+  Contact's age
+</ResponseField>
+
+### Contact Details
+
+<ResponseField name="Phone" type="string">
+  Primary phone number
+</ResponseField>
+
+<ResponseField name="Mobile" type="string">
+  Mobile phone number
+</ResponseField>
+
+<ResponseField name="Address" type="string">
+  Physical address
+</ResponseField>
+
+<ResponseField name="Notes" type="string">
+  Additional notes or comments about the contact
+</ResponseField>
+
+### System Fields
+
+<ResponseField name="ClientId" type="int">
+  Your account ID in Mailee.me
+</ResponseField>
+
+<ResponseField name="OriginId" type="int">
+  Origin identifier for tracking contact source
+</ResponseField>
+
+<ResponseField name="ContactStatusId" type="int">
+  Current status of the contact
+</ResponseField>
+
+<ResponseField name="ImportId" type="int">
+  Import batch identifier if contact was imported
+</ResponseField>
+
+### Timestamps
+
+<ResponseField name="CreatedAt" type="DateTime?">
+  When the contact was created
+</ResponseField>
+
+<ResponseField name="UpdatedAt" type="DateTime?">
+  When the contact was last updated
+</ResponseField>
+
+<ResponseField name="DeletedAt" type="DateTime?">
+  When the contact was deleted (soft delete)
+</ResponseField>
+
+### Dynamic Fields
+
+<ResponseField name="DynamicValues" type="List<KeyValuePair<string, string>>">
+  Custom fields with dynamic key-value pairs for additional contact attributes
+</ResponseField>
+
+### Geographic Information
+
+<ResponseField name="Latitude" type="decimal">
+  Geographic latitude coordinate
+</ResponseField>
+
+<ResponseField name="Longitude" type="decimal">
+  Geographic longitude coordinate
+</ResponseField>
+
+### Social Media Metrics
+
+<ResponseField name="FacebookFollowers" type="int">
+  Number of Facebook followers
+</ResponseField>
+
+<ResponseField name="TwitterFollowers" type="int">
+  Number of Twitter followers
+</ResponseField>
+
+<ResponseField name="LinkedinFollowers" type="int">
+  Number of LinkedIn followers
+</ResponseField>
+
+<ResponseField name="LinkedinRecomendations" type="int">
+  Number of LinkedIn recommendations
+</ResponseField>
+
+<ResponseField name="OrkutFollowers" type="int">
+  Number of Orkut followers
+</ResponseField>
+
+<ResponseField name="GoodreadsConnections" type="int">
+  Number of Goodreads connections
+</ResponseField>
+
+<ResponseField name="PlaxoConnections" type="int">
+  Number of Plaxo connections
+</ResponseField>
+
+<ResponseField name="SkoobConnections" type="int">
+  Number of Skoob connections
+</ResponseField>
+
+<ResponseField name="Kscore" type="float">
+  Klout score for social media influence
+</ResponseField>
+
+### Photo Information
+
+<ResponseField name="PhotoFileName" type="string">
+  Filename of the contact's photo
+</ResponseField>
+
+<ResponseField name="PhotoContentType" type="string">
+  MIME type of the photo
+</ResponseField>
+
+<ResponseField name="PhotoFileSize" type="int">
+  Size of the photo file in bytes
+</ResponseField>
+
+<ResponseField name="PhotoUpdatedAt" type="DateTime?">
+  When the photo was last updated
+</ResponseField>
+
+<ResponseField name="ForwardedBy" type="int">
+  ID of the contact who forwarded this contact
+</ResponseField>
+
+## Methods
+
+### Static Methods
+
+#### findAll()
+
+Retrieves all contacts from your account.
+
+```csharp
+public static List<Mailee.Contact> findAll()
+```
+
+**Returns:** `List<Mailee.Contact>` - List of all contacts
+
+**Example:**
+```csharp
+List<Mailee.Contact> contacts = Mailee.Contact.findAll();
+```
+
+---
+
+#### findAll(int page)
+
+Retrieves contacts with pagination.
+
+```csharp
+public static List<Mailee.Contact> findAll(int page)
+```
+
+<ParamField path="page" type="int" required>
+  Page number for pagination
+</ParamField>
+
+**Returns:** `List<Mailee.Contact>` - List of contacts for the specified page
+
+---
+
+#### findById(int id)
+
+Retrieves a specific contact by its Mailee.me ID.
+
+```csharp
+public static Mailee.Contact findById(int id)
+```
+
+<ParamField path="id" type="int" required>
+  The Mailee.me contact ID
+</ParamField>
+
+**Returns:** `Mailee.Contact` - The contact object, or empty contact if not found
+
+**Example:**
+```csharp
+Mailee.Contact contact = Mailee.Contact.findById(1);
+```
+
+---
+
+#### findByInternalId(int internalId)
+
+Retrieves a contact by your system's internal ID.
+
+```csharp
+public static Mailee.Contact findByInternalId(int internalId)
+```
+
+<ParamField path="internalId" type="int" required>
+  Your system's contact ID
+</ParamField>
+
+**Returns:** `Mailee.Contact` - The contact object, or empty contact if not found
+
+**Example:**
+```csharp
+Mailee.Contact contact = Mailee.Contact.findByInternalId(1);
+```
+
+---
+
+#### findByEmail(string email)
+
+Retrieves a contact by email address.
+
+```csharp
+public static Mailee.Contact findByEmail(string email)
+```
+
+<ParamField path="email" type="string" required>
+  The contact's email address
+</ParamField>
+
+**Returns:** `Mailee.Contact` - The contact object, or empty contact if not found
+
+**Example:**
+```csharp
+Mailee.Contact contact = Mailee.Contact.findByEmail("email@site.com");
+```
+
+### Instance Methods
+
+#### save()
+
+Creates a new contact or updates an existing one. If `Id` is 0, creates a new contact. Otherwise, updates the existing contact.
+
+```csharp
+public string save()
+```
+
+**Returns:** `string` - XML response from the API
+
+**Example - Create:**
+```csharp
+// Create Contact
+Mailee.Contact contact = new Mailee.Contact();
+contact.Email = "email@site.com";
+contact.Name = "Nome";
+contact.InternalId = 33;
+contact.Company = "Empresa";
+contact.Position = "Cargo";
+contact.Sex = "M";
+contact.Birthday = new DateTime(1986, 1, 30);
+contact.Age = 25;
+contact.Phone = "(71) 9999-8888";
+contact.Mobile = "(71) 9999-8888";
+contact.Address = "Rua Teste, S/N";
+contact.Notes = "Anotações do Contato";
+
+// Add Optional Fields
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Campo 1", "Valor 1"));
+contact.DynamicValues.Add(new KeyValuePair<string, string>("Campo 2", "Valor 2"));
+
+// Save
+contact.save();
+```
+
+**Example - Update:**
+```csharp
+// Find Contact
+Mailee.Contact contact = Mailee.Contact.findById(1);
+
+// Update Fields
+contact.Email = "newemail@site.com";
+contact.Name = "Updated Name";
+
+// Save
+contact.save();
+```
+
+---
+
+#### Subscribe(string listName)
+
+Subscribes the contact to a mailing list by list name.
+
+```csharp
+public string Subscribe(string listName)
+```
+
+<ParamField path="listName" type="string" required>
+  Name of the list to subscribe to
+</ParamField>
+
+**Returns:** `string` - XML response from the API
+
+**Example:**
+```csharp
+Mailee.Contact contact = Mailee.Contact.findById(1);
+contact.Subscribe("clients");
+```
+
+---
+
+#### Subscribe(int listId)
+
+Subscribes the contact to a mailing list by list ID.
+
+```csharp
+public string Subscribe(int listId)
+```
+
+<ParamField path="listId" type="int" required>
+  ID of the list to subscribe to
+</ParamField>
+
+**Returns:** `string` - XML response from the API
+
+**Example:**
+```csharp
+Mailee.Contact contact = Mailee.Contact.findById(1);
+contact.Subscribe(99);
+```
+
+---
+
+#### Unsubscribe(string listName)
+
+Unsubscribes the contact from a mailing list by list name.
+
+```csharp
+public string Unsubscribe(string listName)
+```
+
+<ParamField path="listName" type="string" required>
+  Name of the list to unsubscribe from
+</ParamField>
+
+**Returns:** `string` - XML response from the API
+
+**Example:**
+```csharp
+Mailee.Contact contact = Mailee.Contact.findById(1);
+contact.Unsubscribe("clients");
+```
+
+---
+
+#### Unsubscribe(int listId)
+
+Unsubscribes the contact from a mailing list by list ID.
+
+```csharp
+public string Unsubscribe(int listId)
+```
+
+<ParamField path="listId" type="int" required>
+  ID of the list to unsubscribe from
+</ParamField>
+
+**Returns:** `string` - XML response from the API
+
+**Example:**
+```csharp
+Mailee.Contact contact = Mailee.Contact.findById(1);
+contact.Unsubscribe(99);
+```
+
+---
+
+#### Unsubscribe()
+
+Unsubscribes the contact from all communications (global unsubscribe).
+
+```csharp
+public string Unsubscribe()
+```
+
+**Returns:** `string` - XML response from the API
+
+**Example:**
+```csharp
+Mailee.Contact contact = Mailee.Contact.findById(1);
+contact.Unsubscribe();
+```
+
+## Error Handling
+
+All methods may throw `Mailee.RestException` on API errors:
+
+```csharp
+try
+{
+    Mailee.Contact contact = new Mailee.Contact();
+    contact.Email = "email@site.com";
+    contact.Name = "Test Contact";
+    contact.save();
+}
+catch (Mailee.RestException ex)
+{
+    // Show error messages
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine(error);
+    }
+    Console.WriteLine($"Status Code: {ex.StatusCode}");
+}
+```
+
+## Related Resources
+
+- [List](/api/list) - Manage mailing lists
+- [Message](/api/message) - Send messages to contacts
+- [Configuration](/configuration) - API setup guide

@@ -1,0 +1,477 @@
+---
+title: Report
+description: Retrieve delivery and engagement reports for sent messages
+---
+
+## Overview
+
+The `Report` class provides access to delivery statistics and engagement metrics for messages sent through Mailee.me. Use it to track opens, returns, and overall campaign performance.
+
+## Properties
+
+### Message Information
+
+<ResponseField name="Title" type="string">
+  Internal title of the message
+</ResponseField>
+
+<ResponseField name="Subject" type="string">
+  Subject line of the email
+</ResponseField>
+
+<ResponseField name="Date" type="string">
+  Date when the message was sent
+</ResponseField>
+
+### Sender Information
+
+<ResponseField name="FromName" type="string">
+  Display name of the sender
+</ResponseField>
+
+<ResponseField name="FromEmail" type="string">
+  Email address of the sender
+</ResponseField>
+
+<ResponseField name="ReplyEmail" type="string">
+  Reply-to email address
+</ResponseField>
+
+<ResponseField name="Signature" type="string">
+  Email signature used in the message
+</ResponseField>
+
+### Associated Resources
+
+<ResponseField name="NewsletterId" type="int">
+  ID of the associated newsletter
+</ResponseField>
+
+<ResponseField name="NewsletterTitle" type="string">
+  Title of the associated newsletter
+</ResponseField>
+
+<ResponseField name="ListId" type="int">
+  ID of the mailing list used
+</ResponseField>
+
+<ResponseField name="SegmentId" type="int">
+  ID of the segment targeted
+</ResponseField>
+
+<ResponseField name="TemplateId" type="int">
+  ID of the template used
+</ResponseField>
+
+<ResponseField name="TemplateTitle" type="string">
+  Title of the template used
+</ResponseField>
+
+### Media
+
+<ResponseField name="Image" type="string">
+  URL or path to the message thumbnail/preview image
+</ResponseField>
+
+### Delivery Statistics
+
+<ResponseField name="ResultsTotal" type="int">
+  Total number of emails sent
+</ResponseField>
+
+<ResponseField name="ResultsOpens" type="int">
+  Number of emails opened by recipients
+</ResponseField>
+
+<ResponseField name="ResultsReturns" type="int">
+  Number of bounced/returned emails
+</ResponseField>
+
+<ResponseField name="ResultsNotOpened" type="int">
+  Number of emails that were not opened
+</ResponseField>
+
+## Methods
+
+### Static Methods
+
+#### findByMessage(int messageId)
+
+Retrieves the delivery report for a specific message.
+
+```csharp
+public static Mailee.Report findByMessage(int messageId)
+```
+
+<ParamField path="messageId" type="int" required>
+  The ID of the message to get the report for
+</ParamField>
+
+**Returns:** `Mailee.Report` - Report object containing delivery statistics and message information
+
+**Example:**
+```csharp
+// Get report for message ID 12345
+Mailee.Report report = Mailee.Report.findByMessage(12345);
+
+Console.WriteLine($"Message: {report.Title}");
+Console.WriteLine($"Subject: {report.Subject}");
+Console.WriteLine($"Sent: {report.Date}");
+Console.WriteLine($"\nDelivery Statistics:");
+Console.WriteLine($"Total Sent: {report.ResultsTotal}");
+Console.WriteLine($"Opened: {report.ResultsOpens}");
+Console.WriteLine($"Not Opened: {report.ResultsNotOpened}");
+Console.WriteLine($"Bounced: {report.ResultsReturns}");
+```
+
+## Usage Examples
+
+### Basic Report Retrieval
+
+```csharp
+using System;
+using Mailee;
+
+try
+{
+    // Get report for a specific message
+    Mailee.Report report = Mailee.Report.findByMessage(100);
+    
+    // Display message information
+    Console.WriteLine("=== Message Information ===");
+    Console.WriteLine($"Title: {report.Title}");
+    Console.WriteLine($"Subject: {report.Subject}");
+    Console.WriteLine($"From: {report.FromName} <{report.FromEmail}>");
+    Console.WriteLine($"Date Sent: {report.Date}");
+    
+    // Display delivery statistics
+    Console.WriteLine("\n=== Delivery Statistics ===");
+    Console.WriteLine($"Total Recipients: {report.ResultsTotal}");
+    Console.WriteLine($"Opens: {report.ResultsOpens}");
+    Console.WriteLine($"Not Opened: {report.ResultsNotOpened}");
+    Console.WriteLine($"Bounces: {report.ResultsReturns}");
+    
+    // Calculate engagement rate
+    if (report.ResultsTotal > 0)
+    {
+        double openRate = (double)report.ResultsOpens / report.ResultsTotal * 100;
+        double bounceRate = (double)report.ResultsReturns / report.ResultsTotal * 100;
+        
+        Console.WriteLine("\n=== Engagement Metrics ===");
+        Console.WriteLine($"Open Rate: {openRate:F2}%");
+        Console.WriteLine($"Bounce Rate: {bounceRate:F2}%");
+    }
+}
+catch (Mailee.RestException ex)
+{
+    Console.WriteLine("API Error:");
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine($"- {error}");
+    }
+}
+```
+
+### Calculate Campaign Performance
+
+```csharp
+using System;
+using Mailee;
+
+class CampaignAnalyzer
+{
+    public static void AnalyzeCampaign(int messageId)
+    {
+        try
+        {
+            Mailee.Report report = Mailee.Report.findByMessage(messageId);
+            
+            Console.WriteLine($"Campaign Report: {report.Title}");
+            Console.WriteLine($"Subject: {report.Subject}");
+            Console.WriteLine($"Sent: {report.Date}\n");
+            
+            // Calculate metrics
+            int delivered = report.ResultsTotal - report.ResultsReturns;
+            double openRate = (double)report.ResultsOpens / delivered * 100;
+            double bounceRate = (double)report.ResultsReturns / report.ResultsTotal * 100;
+            
+            Console.WriteLine("Performance Metrics:");
+            Console.WriteLine($"  Total Sent:     {report.ResultsTotal:N0}");
+            Console.WriteLine($"  Delivered:      {delivered:N0}");
+            Console.WriteLine($"  Opens:          {report.ResultsOpens:N0}");
+            Console.WriteLine($"  Bounces:        {report.ResultsReturns:N0}");
+            Console.WriteLine($"  Not Opened:     {report.ResultsNotOpened:N0}\n");
+            
+            Console.WriteLine($"  Open Rate:      {openRate:F2}%");
+            Console.WriteLine($"  Bounce Rate:    {bounceRate:F2}%\n");
+            
+            // Provide performance assessment
+            if (openRate >= 20)
+                Console.WriteLine("✓ Great open rate!");
+            else if (openRate >= 15)
+                Console.WriteLine("→ Good open rate");
+            else
+                Console.WriteLine("! Open rate could be improved");
+            
+            if (bounceRate <= 2)
+                Console.WriteLine("✓ Excellent delivery rate");
+            else if (bounceRate <= 5)
+                Console.WriteLine("→ Acceptable bounce rate");
+            else
+                Console.WriteLine("! High bounce rate - check list quality");
+        }
+        catch (Mailee.RestException ex)
+        {
+            Console.WriteLine("Error retrieving report:");
+            foreach (string error in ex.ErrorMessages)
+            {
+                Console.WriteLine($"  {error}");
+            }
+        }
+    }
+}
+```
+
+### Compare Multiple Campaigns
+
+```csharp
+using System;
+using System.Collections.Generic;
+using Mailee;
+
+class CampaignComparison
+{
+    public static void CompareReports(params int[] messageIds)
+    {
+        Console.WriteLine("Campaign Comparison Report\n");
+        Console.WriteLine($"{"",5} {"Title",-30} {"Sent",10} {"Opens",10} {"Open %",10} {"Bounces",10}");
+        Console.WriteLine(new string('-', 85));
+        
+        foreach (int messageId in messageIds)
+        {
+            try
+            {
+                Mailee.Report report = Mailee.Report.findByMessage(messageId);
+                
+                double openRate = report.ResultsTotal > 0 
+                    ? (double)report.ResultsOpens / report.ResultsTotal * 100 
+                    : 0;
+                
+                string title = report.Title.Length > 28 
+                    ? report.Title.Substring(0, 25) + "..." 
+                    : report.Title;
+                
+                Console.WriteLine($"{messageId,5} {title,-30} {report.ResultsTotal,10} {report.ResultsOpens,10} {openRate,9:F2}% {report.ResultsReturns,10}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"{messageId,5} Error: {ex.Message}");
+            }
+        }
+    }
+    
+    static void Main()
+    {
+        // Compare reports for messages 100, 101, 102
+        CompareReports(100, 101, 102);
+    }
+}
+```
+
+### Export Report to CSV
+
+```csharp
+using System;
+using System.IO;
+using Mailee;
+
+class ReportExporter
+{
+    public static void ExportToCSV(int messageId, string filePath)
+    {
+        try
+        {
+            Mailee.Report report = Mailee.Report.findByMessage(messageId);
+            
+            using (StreamWriter writer = new StreamWriter(filePath))
+            {
+                // Write headers
+                writer.WriteLine("Metric,Value");
+                
+                // Write message information
+                writer.WriteLine($"Message ID,{messageId}");
+                writer.WriteLine($"Title,\"{report.Title}\"");
+                writer.WriteLine($"Subject,\"{report.Subject}\"");
+                writer.WriteLine($"From Name,{report.FromName}");
+                writer.WriteLine($"From Email,{report.FromEmail}");
+                writer.WriteLine($"Date Sent,{report.Date}");
+                writer.WriteLine();
+                
+                // Write statistics
+                writer.WriteLine($"Total Sent,{report.ResultsTotal}");
+                writer.WriteLine($"Opens,{report.ResultsOpens}");
+                writer.WriteLine($"Not Opened,{report.ResultsNotOpened}");
+                writer.WriteLine($"Bounces,{report.ResultsReturns}");
+                
+                // Calculate and write rates
+                if (report.ResultsTotal > 0)
+                {
+                    double openRate = (double)report.ResultsOpens / report.ResultsTotal * 100;
+                    double bounceRate = (double)report.ResultsReturns / report.ResultsTotal * 100;
+                    
+                    writer.WriteLine($"Open Rate (%),{openRate:F2}");
+                    writer.WriteLine($"Bounce Rate (%),{bounceRate:F2}");
+                }
+            }
+            
+            Console.WriteLine($"Report exported to: {filePath}");
+        }
+        catch (Mailee.RestException ex)
+        {
+            Console.WriteLine("API Error:");
+            foreach (string error in ex.ErrorMessages)
+            {
+                Console.WriteLine($"- {error}");
+            }
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"File Error: {ex.Message}");
+        }
+    }
+    
+    static void Main()
+    {
+        ExportToCSV(100, "campaign_report.csv");
+    }
+}
+```
+
+## Complete Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using Mailee;
+
+class ReportManager
+{
+    static void Main()
+    {
+        try
+        {
+            // Send a message first
+            Mailee.Message message = new Mailee.Message();
+            message.Title = "Test Campaign";
+            message.Subject = "Testing Email Analytics";
+            message.FromName = "My Company";
+            message.FromEmail = "campaigns@mycompany.com";
+            message.Html = "<html><body><h1>Test Email</h1></body></html>";
+            message.Analytics = true;
+            message.Emails = "test1@example.com, test2@example.com";
+            message.save();
+            
+            Console.WriteLine($"Message sent with ID: {message.Id}\n");
+            
+            // Wait for delivery (in production, you'd check this later)
+            Console.WriteLine("Waiting for message delivery...");
+            System.Threading.Thread.Sleep(5000);
+            
+            // Get the report
+            Mailee.Report report = Mailee.Report.findByMessage(message.Id);
+            
+            // Display comprehensive report
+            Console.WriteLine("\n" + new string('=', 60));
+            Console.WriteLine("MESSAGE DELIVERY REPORT");
+            Console.WriteLine(new string('=', 60));
+            
+            Console.WriteLine("\nMessage Details:");
+            Console.WriteLine($"  Title:          {report.Title}");
+            Console.WriteLine($"  Subject:        {report.Subject}");
+            Console.WriteLine($"  From:           {report.FromName} <{report.FromEmail}>");
+            Console.WriteLine($"  Reply To:       {report.ReplyEmail}");
+            Console.WriteLine($"  Date:           {report.Date}");
+            
+            Console.WriteLine("\nTemplate Information:");
+            Console.WriteLine($"  Template ID:    {report.TemplateId}");
+            Console.WriteLine($"  Template:       {report.TemplateTitle}");
+            Console.WriteLine($"  List ID:        {report.ListId}");
+            Console.WriteLine($"  Segment ID:     {report.SegmentId}");
+            
+            Console.WriteLine("\nDelivery Statistics:");
+            Console.WriteLine($"  Total Sent:     {report.ResultsTotal:N0}");
+            Console.WriteLine($"  Opened:         {report.ResultsOpens:N0}");
+            Console.WriteLine($"  Not Opened:     {report.ResultsNotOpened:N0}");
+            Console.WriteLine($"  Bounced:        {report.ResultsReturns:N0}");
+            
+            if (report.ResultsTotal > 0)
+            {
+                int delivered = report.ResultsTotal - report.ResultsReturns;
+                double openRate = (double)report.ResultsOpens / delivered * 100;
+                double bounceRate = (double)report.ResultsReturns / report.ResultsTotal * 100;
+                double notOpenedRate = (double)report.ResultsNotOpened / delivered * 100;
+                
+                Console.WriteLine("\nEngagement Rates:");
+                Console.WriteLine($"  Open Rate:      {openRate:F2}%");
+                Console.WriteLine($"  Bounce Rate:    {bounceRate:F2}%");
+                Console.WriteLine($"  Not Opened:     {notOpenedRate:F2}%");
+            }
+            
+            Console.WriteLine("\n" + new string('=', 60));
+        }
+        catch (Mailee.RestException ex)
+        {
+            Console.WriteLine("\nAPI Error:");
+            foreach (string error in ex.ErrorMessages)
+            {
+                Console.WriteLine($"  - {error}");
+            }
+            Console.WriteLine($"\nStatus: {ex.StatusCode} - {ex.StatusDescription}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\nError: {ex.Message}");
+        }
+    }
+}
+```
+
+## Error Handling
+
+All methods may throw `Mailee.RestException` on API errors:
+
+```csharp
+try
+{
+    Mailee.Report report = Mailee.Report.findByMessage(12345);
+    Console.WriteLine($"Open Rate: {report.ResultsOpens}/{report.ResultsTotal}");
+}
+catch (Mailee.RestException ex)
+{
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine(error);
+    }
+    Console.WriteLine($"Status Code: {ex.StatusCode}");
+}
+```
+
+## Metrics Explained
+
+- **ResultsTotal**: Total number of email addresses the message was sent to
+- **ResultsOpens**: Number of unique recipients who opened the email (tracked via pixel)
+- **ResultsReturns**: Number of bounced emails (hard and soft bounces)
+- **ResultsNotOpened**: Recipients who received the email but didn't open it
+
+## Best Practices
+
+1. **Check reports after delivery**: Wait appropriate time for delivery before fetching reports
+2. **Monitor bounce rates**: High bounce rates may indicate list quality issues
+3. **Track open rates**: Compare across campaigns to optimize subject lines and timing
+4. **Regular reporting**: Schedule regular report generation for ongoing campaigns
+
+## Related Resources
+
+- [Message](/api/message) - Create and send messages
+- [List](/api/list) - Manage mailing lists
+- [Configuration](/configuration) - API setup guide

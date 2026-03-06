@@ -1,0 +1,312 @@
+---
+title: 'Error Handling'
+description: 'Learn how to handle errors and exceptions in the Mailee.me .NET SDK'
+---
+
+## Overview
+
+The Mailee.me .NET SDK uses the `RestExcepction` class to handle API errors. This exception class provides detailed error information including HTTP status codes, status descriptions, and error messages returned from the API.
+
+<Note>
+Note the typo in the class name: `RestExcepction` (not `RestException`). This is the actual class name in the SDK.
+</Note>
+
+## RestExcepction Class
+
+The `RestExcepction` class inherits from `System.Exception` and provides three key properties:
+
+### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `StatusCode` | `int` | HTTP status code (e.g., 400, 401, 404, 500) |
+| `StatusDesciption` | `string` | HTTP status description (e.g., "Bad Request", "Unauthorized") |
+| `ErrorMessages` | `List<string>` | List of error messages returned from the API |
+
+## Basic Error Handling
+
+Here's the recommended pattern for handling errors when working with the SDK:
+
+```csharp
+using Mailee;
+
+try
+{
+    // Create and save a contact
+    Contact contact = new Contact();
+    contact.Email = "user@example.com";
+    contact.Name = "John Doe";
+    contact.save();
+}
+catch (Mailee.RestExcepction ex)
+{
+    // Handle API-specific errors
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine("API Error: " + error);
+    }
+    
+    // Log HTTP status information
+    Console.WriteLine("Status Code: " + ex.StatusCode);
+    Console.WriteLine("Status Description: " + ex.StatusDesciption);
+}
+catch (Exception ex)
+{
+    // Handle general exceptions
+    Console.WriteLine("General Error: " + ex.Message);
+}
+```
+
+## Error Response Format
+
+The SDK automatically parses XML error responses from the API. Error messages are extracted from XML elements:
+
+```xml
+<errors>
+  <error>Email is required</error>
+  <error>Name cannot be blank</error>
+</errors>
+```
+
+<Info>
+If the API returns a non-XML error response, the entire response body is added as a single error message.
+</Info>
+
+## Common HTTP Status Codes
+
+Understand the common status codes you might encounter:
+
+<Accordion title="4xx Client Errors">
+  - **400 Bad Request**: Invalid parameters or malformed request
+  - **401 Unauthorized**: Invalid API key or subdomain configuration
+  - **404 Not Found**: Resource does not exist (e.g., contact ID not found)
+  - **422 Unprocessable Entity**: Validation errors in the submitted data
+</Accordion>
+
+<Accordion title="5xx Server Errors">
+  - **500 Internal Server Error**: Server-side error occurred
+  - **503 Service Unavailable**: API is temporarily unavailable
+</Accordion>
+
+## Advanced Error Handling
+
+### Handling Specific Status Codes
+
+```csharp
+try
+{
+    Contact contact = Contact.findById(123);
+}
+catch (Mailee.RestExcepction ex)
+{
+    switch (ex.StatusCode)
+    {
+        case 404:
+            Console.WriteLine("Contact not found");
+            break;
+        case 401:
+            Console.WriteLine("Authentication failed. Check API credentials.");
+            break;
+        case 422:
+            Console.WriteLine("Validation errors:");
+            foreach (string error in ex.ErrorMessages)
+            {
+                Console.WriteLine("  - " + error);
+            }
+            break;
+        default:
+            Console.WriteLine($"API error ({ex.StatusCode}): {ex.StatusDesciption}");
+            break;
+    }
+}
+```
+
+### Validation Before API Calls
+
+Reduce API errors by validating data before making requests:
+
+```csharp
+public bool ValidateContact(Contact contact)
+{
+    if (string.IsNullOrWhiteSpace(contact.Email))
+    {
+        Console.WriteLine("Email is required");
+        return false;
+    }
+    
+    if (!IsValidEmail(contact.Email))
+    {
+        Console.WriteLine("Email format is invalid");
+        return false;
+    }
+    
+    return true;
+}
+
+// Use validation
+Contact contact = new Contact();
+contact.Email = "user@example.com";
+contact.Name = "Jane Smith";
+
+if (ValidateContact(contact))
+{
+    try
+    {
+        contact.save();
+    }
+    catch (Mailee.RestExcepction ex)
+    {
+        // Handle unexpected API errors
+    }
+}
+```
+
+## Retry Strategies
+
+Implement retry logic for transient failures:
+
+```csharp
+public T ExecuteWithRetry<T>(Func<T> operation, int maxRetries = 3)
+{
+    int retryCount = 0;
+    
+    while (true)
+    {
+        try
+        {
+            return operation();
+        }
+        catch (Mailee.RestExcepction ex)
+        {
+            retryCount++;
+            
+            // Only retry on server errors (5xx) or network issues
+            bool shouldRetry = ex.StatusCode >= 500 && retryCount < maxRetries;
+            
+            if (!shouldRetry)
+            {
+                throw; // Re-throw if not retrying
+            }
+            
+            // Exponential backoff
+            int delayMs = (int)Math.Pow(2, retryCount) * 1000;
+            Console.WriteLine($"Retry {retryCount}/{maxRetries} after {delayMs}ms...");
+            System.Threading.Thread.Sleep(delayMs);
+        }
+    }
+}
+
+// Usage
+Contact contact = ExecuteWithRetry(() => Contact.findById(123));
+```
+
+<Warning>
+Do not retry operations that modify data (POST, PUT) without careful consideration, as this may result in duplicate records or unintended changes.
+</Warning>
+
+## Logging Best Practices
+
+### Structured Logging
+
+```csharp
+public void LogApiError(Mailee.RestExcepction ex, string operation)
+{
+    var logEntry = new
+    {
+        Timestamp = DateTime.UtcNow,
+        Operation = operation,
+        StatusCode = ex.StatusCode,
+        StatusDescription = ex.StatusDesciption,
+        Errors = ex.ErrorMessages,
+        StackTrace = ex.StackTrace
+    };
+    
+    // Log to your logging framework
+    // Example: logger.Error(JsonConvert.SerializeObject(logEntry));
+    Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(logEntry, 
+        Newtonsoft.Json.Formatting.Indented));
+}
+
+// Usage
+try
+{
+    contact.save();
+}
+catch (Mailee.RestExcepction ex)
+{
+    LogApiError(ex, "Contact.save");
+    throw;
+}
+```
+
+### Sanitizing Sensitive Data
+
+<Warning>
+Never log sensitive information such as API keys, passwords, or personal data. Always sanitize error logs.
+</Warning>
+
+```csharp
+public string SanitizeEmail(string email)
+{
+    if (string.IsNullOrEmpty(email)) return "[empty]";
+    
+    var parts = email.Split('@');
+    if (parts.Length == 2)
+    {
+        return $"{parts[0].Substring(0, Math.Min(2, parts[0].Length))}***@{parts[1]}";
+    }
+    return "[invalid]";
+}
+```
+
+## User-Friendly Error Messages
+
+Translate technical errors into user-friendly messages:
+
+```csharp
+public string GetFriendlyErrorMessage(Mailee.RestExcepction ex)
+{
+    switch (ex.StatusCode)
+    {
+        case 401:
+            return "Unable to authenticate with the email service. Please contact support.";
+        case 404:
+            return "The requested contact was not found.";
+        case 422:
+            return "Please check your input: " + string.Join(", ", ex.ErrorMessages);
+        case 429:
+            return "Too many requests. Please try again later.";
+        case 500:
+        case 503:
+            return "The email service is temporarily unavailable. Please try again later.";
+        default:
+            return "An error occurred while processing your request. Please try again.";
+    }
+}
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Always Catch RestExcepction" icon="shield-check">
+    Always catch `Mailee.RestExcepction` specifically before catching general exceptions to properly handle API errors.
+  </Card>
+  
+  <Card title="Log All API Errors" icon="file-text">
+    Implement comprehensive logging for all API errors to aid in debugging and monitoring.
+  </Card>
+  
+  <Card title="Implement Retry Logic" icon="rotate">
+    Use exponential backoff retry strategies for transient failures (5xx errors).
+  </Card>
+  
+  <Card title="Validate Input" icon="check-circle">
+    Validate data before making API calls to reduce unnecessary errors and improve performance.
+  </Card>
+</CardGroup>
+
+## Related Resources
+
+<Card title="API Reference" icon="book" href="/api/contact">
+  View the complete API reference documentation
+</Card>

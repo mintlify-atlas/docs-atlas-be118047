@@ -1,0 +1,402 @@
+---
+title: Message
+description: Create and manage email messages in your Mailee.me account
+---
+
+## Overview
+
+The `Message` class represents an email message in Mailee.me. Use it to create, send, and manage email campaigns with HTML content, templates, and advanced targeting options.
+
+## Properties
+
+### Basic Information
+
+<ResponseField name="Id" type="int">
+  Unique identifier for the message
+</ResponseField>
+
+<ResponseField name="Title" type="string">
+  Internal title for the message (not visible to recipients)
+</ResponseField>
+
+<ResponseField name="Subject" type="string">
+  Email subject line visible to recipients
+</ResponseField>
+
+### Sender Information
+
+<ResponseField name="FromName" type="string">
+  Sender's display name
+</ResponseField>
+
+<ResponseField name="FromEmail" type="string">
+  Sender's email address
+</ResponseField>
+
+<ResponseField name="ReplyEmail" type="string">
+  Email address for replies
+</ResponseField>
+
+### Content
+
+<ResponseField name="Html" type="string">
+  HTML content of the message
+</ResponseField>
+
+<ResponseField name="HtmlFromUrl" type="string">
+  URL to fetch HTML content from
+</ResponseField>
+
+<ResponseField name="Text" type="string">
+  Plain text version of the message
+</ResponseField>
+
+<ResponseField name="RSS" type="string">
+  RSS feed URL for dynamic content
+</ResponseField>
+
+### Template Configuration
+
+<ResponseField name="TemplateId" type="int">
+  ID of the template to use for this message
+</ResponseField>
+
+<ResponseField name="Edit" type="List<KeyValuePair<int, string>>">
+  Content to be placed in editable regions of the template. Key is the region ID, value is the content.
+</ResponseField>
+
+<ResponseField name="Repeats" type="List<KeyValuePair<int, string>>">
+  Content to be added in repeatable sections of the template. Key is the section ID, value is the content.
+</ResponseField>
+
+### Recipients
+
+<ResponseField name="Emails" type="string">
+  Comma-separated list of email addresses to send to
+</ResponseField>
+
+<ResponseField name="ListId" type="int">
+  ID of the mailing list to send to
+</ResponseField>
+
+<ResponseField name="SegmentId" type="int">
+  ID of the segment within the list to target
+</ResponseField>
+
+### Settings
+
+<ResponseField name="Analytics" type="bool">
+  Enable Google Analytics tracking
+</ResponseField>
+
+<ResponseField name="Checkd" type="bool">
+  Whether the message has been checked
+</ResponseField>
+
+### Scheduling
+
+<ResponseField name="SendAfter" type="DateTime?">
+  Schedule message to be sent after this date/time
+</ResponseField>
+
+<ResponseField name="SendWhen" type="string">
+  When to send the message (e.g., "now", "scheduled")
+</ResponseField>
+
+### Status and Tracking
+
+<ResponseField name="Status" type="int">
+  Current status of the message
+</ResponseField>
+
+<ResponseField name="Total" type="int">
+  Total number of recipients
+</ResponseField>
+
+<ResponseField name="Log" type="string">
+  Delivery log information
+</ResponseField>
+
+### System Fields
+
+<ResponseField name="ClientId" type="int">
+  Your account ID in Mailee.me
+</ResponseField>
+
+<ResponseField name="NewsletterId" type="int">
+  Associated newsletter ID
+</ResponseField>
+
+<ResponseField name="ContentFrom" type="int">
+  Source of the content
+</ResponseField>
+
+<ResponseField name="CreatedAt" type="DateTime?">
+  When the message was created
+</ResponseField>
+
+<ResponseField name="DeletedAt" type="DateTime?">
+  When the message was deleted
+</ResponseField>
+
+### Thumbnail
+
+<ResponseField name="ThumbFileName" type="string">
+  Thumbnail preview filename
+</ResponseField>
+
+<ResponseField name="ThumbContentType" type="string">
+  MIME type of the thumbnail
+</ResponseField>
+
+<ResponseField name="ThumbFileSize" type="int">
+  Size of thumbnail in bytes
+</ResponseField>
+
+<ResponseField name="ThumbUpdatedAt" type="DateTime?">
+  When thumbnail was last updated
+</ResponseField>
+
+<ResponseField name="Url" type="string">
+  URL to view the message
+</ResponseField>
+
+## Constructors
+
+### Message()
+
+Creates a new empty message instance.
+
+```csharp
+Mailee.Message message = new Mailee.Message();
+```
+
+### Message (overloaded constructor)
+
+Creates a new message with all parameters.
+
+```csharp
+Message(string title, string subject, string fromName, string fromEmail, 
+        string replyEmail, string html, int templateId, 
+        List<KeyValuePair<int, string>> edit, 
+        List<KeyValuePair<int, string>> repeats, 
+        bool analytics, string emails, int listId)
+```
+
+## Methods
+
+### Static Methods
+
+#### findAll()
+
+Retrieves all messages from your account.
+
+```csharp
+public static List<Mailee.Message> findAll()
+```
+
+**Returns:** `List<Mailee.Message>` - Collection of all messages
+
+**Example:**
+```csharp
+List<Mailee.Message> messages = Mailee.Message.findAll();
+foreach (var msg in messages)
+{
+    Console.WriteLine($"Message: {msg.Title} - Status: {msg.Status}");
+}
+```
+
+---
+
+#### findById(int id)
+
+Retrieves a specific message by its ID.
+
+```csharp
+public static Mailee.Message findById(int id)
+```
+
+<ParamField path="id" type="int" required>
+  The message ID
+</ParamField>
+
+**Returns:** `Mailee.Message` - The message object, or empty message if not found
+
+**Example:**
+```csharp
+Mailee.Message message = Mailee.Message.findById(1);
+Console.WriteLine($"Subject: {message.Subject}");
+```
+
+### Instance Methods
+
+#### save()
+
+Creates a new message or updates an existing one. If `Id` is 0, creates a new message. Otherwise, updates the existing message.
+
+```csharp
+public string save()
+```
+
+**Returns:** `string` - XML response from the API
+
+## Usage Examples
+
+### Create Message with HTML
+
+```csharp
+// Create Message
+Mailee.Message message = new Mailee.Message();
+message.Title = "Título da Mensagem";
+message.Subject = "Assunto da Mensagem";
+message.FromName = "Nome do Destinatário";
+message.FromEmail = "Email do Destinatário";
+message.ReplyEmail = "Email para Resposta";
+message.Html = "<html><body>Hello World!</body></html>";
+message.Analytics = true;
+message.Emails = "email_teste_1@site.com, email_teste_2@site.com, email_teste_3@site.com";
+
+// Save
+message.save();
+```
+
+### Create Message with Template
+
+```csharp
+// Create Message
+Mailee.Message message = new Mailee.Message();
+message.Title = "Título da Mensagem";
+message.Subject = "Assunto da Mensagem";
+message.FromName = "Nome do Destinatário";
+message.FromEmail = "Email do Destinatário";
+message.ReplyEmail = "Email para Resposta";
+message.TemplateId = 1;
+message.Analytics = true;
+message.Emails = "email_teste_1@site.com, email_teste_2@site.com, email_teste_3@site.com";
+
+// Add content to template regions
+message.Edit.Add(new KeyValuePair<int, string>(1, "<h1>Header Content</h1>"));
+message.Edit.Add(new KeyValuePair<int, string>(2, "<p>Body content here</p>"));
+
+// Save
+message.save();
+```
+
+### Send to List or Segment
+
+```csharp
+// Create Message
+Mailee.Message message = new Mailee.Message();
+message.Title = "Título da Mensagem";
+message.Subject = "Assunto da Mensagem";
+message.FromName = "Nome do Destinatário";
+message.FromEmail = "Email do Destinatário";
+message.ReplyEmail = "Email para Resposta";
+message.Html = "<html><body>Hello World!</body></html>";
+message.TemplateId = 1;
+message.Analytics = true;
+message.ListId = 1;
+message.SegmentId = 1;
+
+// Save
+message.save();
+```
+
+### Update Message
+
+```csharp
+// Find Message
+Mailee.Message message = Mailee.Message.findById(1);
+
+// Update Fields
+message.Title = "Título da Mensagem";
+message.Subject = "Assunto da Mensagem";
+message.FromName = "Nome do Destinatário";
+message.FromEmail = "Email do Destinatário";
+message.ReplyEmail = "Email para Resposta";
+message.Html = "<html><body>Hello World!</body></html>";
+message.TemplateId = 1;
+message.Analytics = true;
+message.Emails = "email_teste_1@site.com, email_teste_2@site.com, email_teste_3@site.com";
+
+// Save
+message.save();
+```
+
+## Complete Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using Mailee;
+
+try
+{
+    // Create a new message with template
+    Mailee.Message message = new Mailee.Message();
+    message.Title = "Weekly Newsletter";
+    message.Subject = "This Week's Updates";
+    message.FromName = "My Company";
+    message.FromEmail = "newsletter@mycompany.com";
+    message.ReplyEmail = "reply@mycompany.com";
+    message.TemplateId = 5;
+    message.Analytics = true;
+    message.ListId = 1;
+    
+    // Add dynamic content to template regions
+    message.Edit.Add(new KeyValuePair<int, string>(1, "<h1>Welcome!</h1>"));
+    message.Edit.Add(new KeyValuePair<int, string>(2, "<p>Here are this week's highlights...</p>"));
+    
+    // Save and send
+    string result = message.save();
+    Console.WriteLine("Message created successfully");
+    
+    // Retrieve and check status
+    Mailee.Message sentMessage = Mailee.Message.findById(message.Id);
+    Console.WriteLine($"Message Status: {sentMessage.Status}");
+    Console.WriteLine($"Total Recipients: {sentMessage.Total}");
+}
+catch (Mailee.RestException ex)
+{
+    Console.WriteLine("API Error:");
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine($"- {error}");
+    }
+    Console.WriteLine($"Status: {ex.StatusCode} - {ex.StatusDescription}");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error: {ex.Message}");
+}
+```
+
+## Error Handling
+
+All methods may throw `Mailee.RestException` on API errors:
+
+```csharp
+try
+{
+    Mailee.Message message = new Mailee.Message();
+    message.Title = "Test Message";
+    message.Subject = "Test";
+    message.FromEmail = "test@example.com";
+    message.save();
+}
+catch (Mailee.RestException ex)
+{
+    foreach (string error in ex.ErrorMessages)
+    {
+        Console.WriteLine(error);
+    }
+    Console.WriteLine($"Status Code: {ex.StatusCode}");
+}
+```
+
+## Related Resources
+
+- [Template](/api/template) - Create reusable email templates
+- [List](/api/list) - Manage recipient lists
+- [Report](/api/report) - View message delivery reports
+- [Configuration](/configuration) - API setup guide
