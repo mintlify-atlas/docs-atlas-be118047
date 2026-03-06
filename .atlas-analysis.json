@@ -1,0 +1,66 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "Mailee.me .NET SDK",
+  "projectDescription": "A .NET library for integrating with the Mailee.me email marketing platform API",
+  "theme": "palm",
+  "primaryColor": "#0066CC",
+  "lightColor": "#3399FF",
+  "darkColor": "#004499",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "configuration"
+        ]
+      },
+      {
+        "group": "Core Concepts",
+        "pages": [
+          "core/contacts",
+          "core/lists",
+          "core/messages",
+          "core/templates",
+          "core/reports"
+        ]
+      },
+      {
+        "group": "API Reference",
+        "pages": [
+          "api/contact",
+          "api/list",
+          "api/message",
+          "api/template",
+          "api/report"
+        ]
+      },
+      {
+        "group": "Advanced",
+        "pages": [
+          "advanced/error-handling",
+          "advanced/dynamic-fields",
+          "advanced/best-practices"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Contact management with custom fields",
+    "Email list and segment management",
+    "Message creation and delivery",
+    "HTML template management",
+    "Campaign analytics and reporting",
+    "Subscribe/unsubscribe operations"
+  ],
+  "publicApiSurface": [
+    "Mailee.Contact",
+    "Mailee.List",
+    "Mailee.Message",
+    "Mailee.Template",
+    "Mailee.Report",
+    "Mailee.Config",
+    "Mailee.RestException"
+  ]
+}
